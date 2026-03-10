@@ -106,10 +106,6 @@ export default function ForgotPasswordPage() {
             </form>
           )}
 
-          {/* TODO: /reset-password page not yet implemented */}
-          <p className="text-[11px] text-muted-foreground/60 mt-4 text-center italic">
-            La pagina di reset password non è ancora disponibile.
-          </p>
         </div>
 
         <div className="text-center mt-6">
