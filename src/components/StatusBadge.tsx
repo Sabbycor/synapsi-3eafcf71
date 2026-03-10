@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { AppointmentStatus, InvoiceStatus, ConsentStatus, PaymentStatus, TaskPriority, TaskStatus } from "@/data/mock";
@@ -51,26 +52,44 @@ const taskStatusColors: Record<TaskStatus, string> = {
   done: "bg-success/10 text-success border-success/20",
 };
 
-export function AppointmentStatusBadge({ status }: { status: AppointmentStatus }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", appointmentColors[status])}>{appointmentStatusLabels[status]}</Badge>;
-}
+export const AppointmentStatusBadge = React.forwardRef<HTMLDivElement, { status: AppointmentStatus }>(
+  ({ status }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", appointmentColors[status])}>{appointmentStatusLabels[status]}</Badge>
+  )
+);
+AppointmentStatusBadge.displayName = "AppointmentStatusBadge";
 
-export function InvoiceStatusBadge({ status }: { status: InvoiceStatus }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", invoiceColors[status])}>{invoiceStatusLabels[status]}</Badge>;
-}
+export const InvoiceStatusBadge = React.forwardRef<HTMLDivElement, { status: InvoiceStatus }>(
+  ({ status }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", invoiceColors[status])}>{invoiceStatusLabels[status]}</Badge>
+  )
+);
+InvoiceStatusBadge.displayName = "InvoiceStatusBadge";
 
-export function ConsentStatusBadge({ status }: { status: ConsentStatus }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", consentColors[status])}>{consentStatusLabels[status]}</Badge>;
-}
+export const ConsentStatusBadge = React.forwardRef<HTMLDivElement, { status: ConsentStatus }>(
+  ({ status }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", consentColors[status])}>{consentStatusLabels[status]}</Badge>
+  )
+);
+ConsentStatusBadge.displayName = "ConsentStatusBadge";
 
-export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", paymentColors[status])}>{paymentStatusLabels[status]}</Badge>;
-}
+export const PaymentStatusBadge = React.forwardRef<HTMLDivElement, { status: PaymentStatus }>(
+  ({ status }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", paymentColors[status])}>{paymentStatusLabels[status]}</Badge>
+  )
+);
+PaymentStatusBadge.displayName = "PaymentStatusBadge";
 
-export function PriorityBadge({ priority }: { priority: TaskPriority }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", priorityColors[priority])}>{priorityLabels[priority]}</Badge>;
-}
+export const PriorityBadge = React.forwardRef<HTMLDivElement, { priority: TaskPriority }>(
+  ({ priority }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", priorityColors[priority])}>{priorityLabels[priority]}</Badge>
+  )
+);
+PriorityBadge.displayName = "PriorityBadge";
 
-export function TaskStatusBadge({ status }: { status: TaskStatus }) {
-  return <Badge variant="outline" className={cn("text-[11px] font-medium", taskStatusColors[status])}>{taskStatusLabels[status]}</Badge>;
-}
+export const TaskStatusBadge = React.forwardRef<HTMLDivElement, { status: TaskStatus }>(
+  ({ status }, ref) => (
+    <Badge ref={ref} variant="outline" className={cn("text-[11px] font-medium", taskStatusColors[status])}>{taskStatusLabels[status]}</Badge>
+  )
+);
+TaskStatusBadge.displayName = "TaskStatusBadge";

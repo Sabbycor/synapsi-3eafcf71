@@ -1,3 +1,4 @@
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
@@ -9,15 +10,18 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({ icon: Icon, title, description, action, className }: EmptyStateProps) {
-  return (
-    <div className={cn("flex flex-col items-center justify-center py-12 text-center", className)}>
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
-        <Icon size={22} className="text-muted-foreground" />
+export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
+  ({ icon: Icon, title, description, action, className }, ref) => {
+    return (
+      <div ref={ref} className={cn("flex flex-col items-center justify-center py-12 text-center", className)}>
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+          <Icon size={22} className="text-muted-foreground" />
+        </div>
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        {description && <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{description}</p>}
+        {action && <div className="mt-4">{action}</div>}
       </div>
-      <p className="text-sm font-medium text-foreground">{title}</p>
-      {description && <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{description}</p>}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
-  );
-}
+    );
+  }
+);
+EmptyState.displayName = "EmptyState";
