@@ -28,8 +28,17 @@ export default function LoginPage() {
     mode: "onBlur",
   });
 
+  // Show nothing while checking auth to prevent form flash
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
   // Redirect already-authenticated users
-  if (!authLoading && session) {
+  if (session) {
     return <Navigate to="/dashboard" replace />;
   }
 
