@@ -12,8 +12,12 @@ import OnboardingPage from "./pages/OnboardingPage";
 import PreviewPage from "./pages/PreviewPage";
 import DashboardPage from "./pages/DashboardPage";
 import PatientsPage from "./pages/PatientsPage";
-import CalendarPage from "./pages/CalendarPage";
 import PatientDetailPage from "./pages/PatientDetailPage";
+import CalendarPage from "./pages/CalendarPage";
+import SessionClosurePage from "./pages/SessionClosurePage";
+import InvoicesPage from "./pages/InvoicesPage";
+import PaymentsPage from "./pages/PaymentsPage";
+import TasksPage from "./pages/TasksPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +44,10 @@ const App = () => (
             <Route path="/patients" element={<PatientsPage />} />
             <Route path="/patients/:id" element={<PatientDetailPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/appointments/:id/close" element={<SessionClosurePage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/payments" element={<PaymentsPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
 

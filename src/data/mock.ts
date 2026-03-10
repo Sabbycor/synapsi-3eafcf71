@@ -3,9 +3,11 @@
 // ============================================================
 
 export type AppointmentStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show";
-export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
+export type InvoiceStatus = "draft" | "issued" | "sent" | "paid" | "partially_paid" | "overdue" | "cancelled";
 export type PaymentMethod = "bank_transfer" | "cash" | "card";
+export type PaymentStatus = "completed" | "pending" | "refunded";
 export type TaskPriority = "high" | "medium" | "low";
+export type TaskStatus = "todo" | "in_progress" | "done";
 export type ConsentStatus = "signed" | "pending" | "expired";
 
 export interface Psychologist {
@@ -27,8 +29,13 @@ export interface Practice {
   city: string;
   province: string;
   zip: string;
-  defaultDuration: number; // minutes
-  defaultRate: number; // EUR
+  defaultDuration: number;
+  defaultRate: number;
+  invoicePrefix: string;
+  invoiceNextNumber: number;
+  paymentTermsDays: number;
+  notifyAppointmentHours: number;
+  notifyInvoiceDays: number;
 }
 
 export interface Patient {
@@ -52,13 +59,14 @@ export interface Patient {
 export interface Appointment {
   id: string;
   patientId: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM
-  endTime: string; // HH:MM
+  date: string;
+  startTime: string;
+  endTime: string;
   status: AppointmentStatus;
   type: string;
   notes: string;
   rate: number;
+  duration: number; // minutes
 }
 
 export interface Invoice {
@@ -71,7 +79,9 @@ export interface Invoice {
   amount: number;
   vat: number;
   total: number;
+  paidAmount: number;
   status: InvoiceStatus;
+  description: string;
 }
 
 export interface Payment {
@@ -81,15 +91,20 @@ export interface Payment {
   date: string;
   amount: number;
   method: PaymentMethod;
+  status: PaymentStatus;
+  notes: string;
 }
 
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   patientId?: string;
   dueDate: string;
-  completed: boolean;
+  status: TaskStatus;
   priority: TaskPriority;
+  category: "patient" | "billing" | "admin" | "setup";
+  completed: boolean;
 }
 
 export interface Reminder {
@@ -134,6 +149,11 @@ export const practice: Practice = {
   zip: "00184",
   defaultDuration: 50,
   defaultRate: 80,
+  invoicePrefix: "2026/",
+  invoiceNextNumber: 7,
+  paymentTermsDays: 30,
+  notifyAppointmentHours: 24,
+  notifyInvoiceDays: 7,
 };
 
 export const patients: Patient[] = [
@@ -148,44 +168,51 @@ export const patients: Patient[] = [
 ];
 
 export const appointments: Appointment[] = [
-  { id: "apt-1", patientId: "pat-1", date: "2026-03-10", startTime: "09:00", endTime: "09:50", status: "confirmed", type: "Colloquio individuale", notes: "", rate: 80 },
-  { id: "apt-2", patientId: "pat-2", date: "2026-03-10", startTime: "10:00", endTime: "10:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80 },
-  { id: "apt-3", patientId: "pat-6", date: "2026-03-10", startTime: "14:00", endTime: "14:50", status: "confirmed", type: "Colloquio individuale", notes: "", rate: 80 },
-  { id: "apt-4", patientId: "pat-8", date: "2026-03-10", startTime: "16:00", endTime: "16:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80 },
-  { id: "apt-5", patientId: "pat-3", date: "2026-03-11", startTime: "09:00", endTime: "09:50", status: "scheduled", type: "Colloquio individuale", notes: "", rate: 80 },
-  { id: "apt-6", patientId: "pat-5", date: "2026-03-11", startTime: "11:00", endTime: "11:50", status: "scheduled", type: "Prima visita", notes: "", rate: 90 },
-  { id: "apt-7", patientId: "pat-4", date: "2026-03-12", startTime: "10:00", endTime: "10:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80 },
-  { id: "apt-8", patientId: "pat-1", date: "2026-03-07", startTime: "09:00", endTime: "09:50", status: "completed", type: "Colloquio individuale", notes: "", rate: 80 },
-  { id: "apt-9", patientId: "pat-2", date: "2026-03-05", startTime: "10:00", endTime: "10:50", status: "completed", type: "Follow-up", notes: "", rate: 80 },
-  { id: "apt-10", patientId: "pat-6", date: "2026-03-06", startTime: "14:00", endTime: "14:50", status: "no_show", type: "Colloquio individuale", notes: "Paziente non presentato", rate: 80 },
-  { id: "apt-11", patientId: "pat-4", date: "2026-03-04", startTime: "11:00", endTime: "11:50", status: "cancelled", type: "Follow-up", notes: "Annullato dal paziente", rate: 80 },
-  { id: "apt-12", patientId: "pat-3", date: "2026-03-08", startTime: "09:00", endTime: "09:50", status: "completed", type: "Colloquio individuale", notes: "", rate: 80 },
+  { id: "apt-1", patientId: "pat-1", date: "2026-03-10", startTime: "09:00", endTime: "09:50", status: "confirmed", type: "Colloquio individuale", notes: "", rate: 80, duration: 50 },
+  { id: "apt-2", patientId: "pat-2", date: "2026-03-10", startTime: "10:00", endTime: "10:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80, duration: 50 },
+  { id: "apt-3", patientId: "pat-6", date: "2026-03-10", startTime: "14:00", endTime: "14:50", status: "confirmed", type: "Colloquio individuale", notes: "", rate: 80, duration: 50 },
+  { id: "apt-4", patientId: "pat-8", date: "2026-03-10", startTime: "16:00", endTime: "16:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80, duration: 50 },
+  { id: "apt-5", patientId: "pat-3", date: "2026-03-11", startTime: "09:00", endTime: "09:50", status: "scheduled", type: "Colloquio individuale", notes: "", rate: 80, duration: 50 },
+  { id: "apt-6", patientId: "pat-5", date: "2026-03-11", startTime: "11:00", endTime: "11:50", status: "scheduled", type: "Prima visita", notes: "", rate: 90, duration: 50 },
+  { id: "apt-7", patientId: "pat-4", date: "2026-03-12", startTime: "10:00", endTime: "10:50", status: "scheduled", type: "Follow-up", notes: "", rate: 80, duration: 50 },
+  { id: "apt-8", patientId: "pat-1", date: "2026-03-07", startTime: "09:00", endTime: "09:50", status: "completed", type: "Colloquio individuale", notes: "", rate: 80, duration: 50 },
+  { id: "apt-9", patientId: "pat-2", date: "2026-03-05", startTime: "10:00", endTime: "10:50", status: "completed", type: "Follow-up", notes: "", rate: 80, duration: 50 },
+  { id: "apt-10", patientId: "pat-6", date: "2026-03-06", startTime: "14:00", endTime: "14:50", status: "no_show", type: "Colloquio individuale", notes: "Paziente non presentato", rate: 80, duration: 50 },
+  { id: "apt-11", patientId: "pat-4", date: "2026-03-04", startTime: "11:00", endTime: "11:50", status: "cancelled", type: "Follow-up", notes: "Annullato dal paziente", rate: 80, duration: 50 },
+  { id: "apt-12", patientId: "pat-3", date: "2026-03-08", startTime: "09:00", endTime: "09:50", status: "completed", type: "Colloquio individuale", notes: "", rate: 80, duration: 50 },
 ];
 
 export const invoices: Invoice[] = [
-  { id: "inv-1", number: "2026/001", patientId: "pat-1", appointmentIds: ["apt-8"], date: "2026-03-07", dueDate: "2026-04-06", amount: 80, vat: 0, total: 80, status: "sent" },
-  { id: "inv-2", number: "2026/002", patientId: "pat-2", appointmentIds: ["apt-9"], date: "2026-03-05", dueDate: "2026-04-04", amount: 80, vat: 0, total: 80, status: "paid" },
-  { id: "inv-3", number: "2026/003", patientId: "pat-3", appointmentIds: ["apt-12"], date: "2026-03-08", dueDate: "2026-04-07", amount: 80, vat: 0, total: 80, status: "sent" },
-  { id: "inv-4", number: "2026/004", patientId: "pat-6", appointmentIds: [], date: "2026-02-15", dueDate: "2026-03-01", amount: 160, vat: 0, total: 160, status: "overdue" },
-  { id: "inv-5", number: "2026/005", patientId: "pat-5", appointmentIds: [], date: "2026-02-20", dueDate: "2026-03-05", amount: 240, vat: 0, total: 240, status: "overdue" },
-  { id: "inv-6", number: "2025/048", patientId: "pat-4", appointmentIds: [], date: "2025-12-15", dueDate: "2026-01-15", amount: 80, vat: 0, total: 80, status: "paid" },
-  { id: "inv-7", number: "2026/006", patientId: "pat-8", appointmentIds: [], date: "2026-03-06", dueDate: "2026-04-05", amount: 80, vat: 0, total: 80, status: "draft" },
+  { id: "inv-1", number: "2026/001", patientId: "pat-1", appointmentIds: ["apt-8"], date: "2026-03-07", dueDate: "2026-04-06", amount: 80, vat: 0, total: 80, paidAmount: 0, status: "sent", description: "Colloquio individuale — 07/03/2026" },
+  { id: "inv-2", number: "2026/002", patientId: "pat-2", appointmentIds: ["apt-9"], date: "2026-03-05", dueDate: "2026-04-04", amount: 80, vat: 0, total: 80, paidAmount: 80, status: "paid", description: "Follow-up — 05/03/2026" },
+  { id: "inv-3", number: "2026/003", patientId: "pat-3", appointmentIds: ["apt-12"], date: "2026-03-08", dueDate: "2026-04-07", amount: 80, vat: 0, total: 80, paidAmount: 0, status: "issued", description: "Colloquio individuale — 08/03/2026" },
+  { id: "inv-4", number: "2026/004", patientId: "pat-6", appointmentIds: [], date: "2026-02-15", dueDate: "2026-03-01", amount: 160, vat: 0, total: 160, paidAmount: 80, status: "partially_paid", description: "2 sedute — Febbraio 2026" },
+  { id: "inv-5", number: "2026/005", patientId: "pat-5", appointmentIds: [], date: "2026-02-20", dueDate: "2026-03-05", amount: 240, vat: 0, total: 240, paidAmount: 0, status: "overdue", description: "3 sedute — Febbraio 2026" },
+  { id: "inv-6", number: "2025/048", patientId: "pat-4", appointmentIds: [], date: "2025-12-15", dueDate: "2026-01-15", amount: 80, vat: 0, total: 80, paidAmount: 80, status: "paid", description: "Colloquio — Dicembre 2025" },
+  { id: "inv-7", number: "2026/006", patientId: "pat-8", appointmentIds: [], date: "2026-03-06", dueDate: "2026-04-05", amount: 80, vat: 0, total: 80, paidAmount: 0, status: "draft", description: "Follow-up — 06/03/2026" },
+  { id: "inv-8", number: "2026/007", patientId: "pat-7", appointmentIds: [], date: "2026-01-10", dueDate: "2026-02-10", amount: 160, vat: 0, total: 160, paidAmount: 0, status: "cancelled", description: "Sedute annullate — Gennaio 2026" },
 ];
 
 export const payments: Payment[] = [
-  { id: "pay-1", invoiceId: "inv-2", patientId: "pat-2", date: "2026-03-06", amount: 80, method: "bank_transfer" },
-  { id: "pay-2", invoiceId: "inv-6", patientId: "pat-4", date: "2026-01-10", amount: 80, method: "cash" },
-  { id: "pay-3", invoiceId: "inv-4", patientId: "pat-6", date: "2026-03-09", amount: 80, method: "card" },
+  { id: "pay-1", invoiceId: "inv-2", patientId: "pat-2", date: "2026-03-06", amount: 80, method: "bank_transfer", status: "completed", notes: "" },
+  { id: "pay-2", invoiceId: "inv-6", patientId: "pat-4", date: "2026-01-10", amount: 80, method: "cash", status: "completed", notes: "" },
+  { id: "pay-3", invoiceId: "inv-4", patientId: "pat-6", date: "2026-03-09", amount: 80, method: "card", status: "completed", notes: "Acconto parziale" },
+  { id: "pay-4", invoiceId: "inv-1", patientId: "pat-1", date: "2026-03-08", amount: 80, method: "bank_transfer", status: "pending", notes: "In attesa di conferma bancaria" },
+  { id: "pay-5", invoiceId: "inv-3", patientId: "pat-3", date: "2026-03-09", amount: 80, method: "cash", status: "completed", notes: "" },
 ];
 
 export const tasks: Task[] = [
-  { id: "tsk-1", title: "Inviare fattura a Marco Bianchi", patientId: "pat-1", dueDate: "2026-03-10", completed: false, priority: "high" },
-  { id: "tsk-2", title: "Rinnovare consenso Andrea Colombo", patientId: "pat-4", dueDate: "2026-03-11", completed: false, priority: "high" },
-  { id: "tsk-3", title: "Aggiornare tariffa prima visita", dueDate: "2026-03-12", completed: false, priority: "medium" },
-  { id: "tsk-4", title: "Verificare pagamento Luca Moretti", patientId: "pat-6", dueDate: "2026-03-10", completed: false, priority: "medium" },
-  { id: "tsk-5", title: "Archiviare cartella Sofia Conti", patientId: "pat-7", dueDate: "2026-03-15", completed: false, priority: "low" },
-  { id: "tsk-6", title: "Controllare scadenze fiscali Q1", dueDate: "2026-03-31", completed: false, priority: "high" },
-  { id: "tsk-7", title: "Confermare appuntamento Davide Romano", patientId: "pat-8", dueDate: "2026-03-10", completed: true, priority: "medium" },
+  { id: "tsk-1", title: "Inviare fattura a Marco Bianchi", description: "Fattura 2026/001 da inviare via email", patientId: "pat-1", dueDate: "2026-03-10", status: "todo", completed: false, priority: "high", category: "billing" },
+  { id: "tsk-2", title: "Rinnovare consenso Andrea Colombo", description: "Il consenso informato è in stato 'in attesa'", patientId: "pat-4", dueDate: "2026-03-11", status: "todo", completed: false, priority: "high", category: "patient" },
+  { id: "tsk-3", title: "Aggiornare tariffa prima visita", description: "Rivedere la tariffa da €90 a €100", dueDate: "2026-03-12", status: "todo", completed: false, priority: "medium", category: "admin" },
+  { id: "tsk-4", title: "Verificare pagamento Luca Moretti", description: "Fattura 2026/004 parzialmente pagata — verificare saldo", patientId: "pat-6", dueDate: "2026-03-10", status: "in_progress", completed: false, priority: "medium", category: "billing" },
+  { id: "tsk-5", title: "Archiviare cartella Sofia Conti", description: "Paziente inattiva da 2 mesi", patientId: "pat-7", dueDate: "2026-03-15", status: "todo", completed: false, priority: "low", category: "patient" },
+  { id: "tsk-6", title: "Controllare scadenze fiscali Q1", description: "Verificare adempimenti fiscali primo trimestre 2026", dueDate: "2026-03-31", status: "todo", completed: false, priority: "high", category: "admin" },
+  { id: "tsk-7", title: "Confermare appuntamento Davide Romano", description: "Follow-up del 10/03 da confermare", patientId: "pat-8", dueDate: "2026-03-10", status: "done", completed: true, priority: "medium", category: "patient" },
+  { id: "tsk-8", title: "Raccogliere codice fiscale mancante", description: "Completare anagrafica paziente", patientId: "pat-8", dueDate: "2026-03-12", status: "todo", completed: false, priority: "medium", category: "patient" },
+  { id: "tsk-9", title: "Caricare consenso firmato", description: "Scansione consenso firmato di Laura Martini", patientId: "pat-2", dueDate: "2026-03-14", status: "todo", completed: false, priority: "low", category: "patient" },
+  { id: "tsk-10", title: "Revisione fattura scaduta", description: "Fattura 2026/005 di Francesca Verdi — €240 scaduta", patientId: "pat-5", dueDate: "2026-03-10", status: "todo", completed: false, priority: "high", category: "billing" },
+  { id: "tsk-11", title: "Completare setup studio", description: "Configurazione iniziale dello studio completata al 80%", dueDate: "2026-03-15", status: "in_progress", completed: false, priority: "low", category: "setup" },
 ];
 
 export const reminders: Reminder[] = [
@@ -206,10 +233,12 @@ export const aiCoachSuggestions: AiCoachSuggestion[] = [
 export const dashboardStats = {
   patientsActive: patients.filter(p => p.status === "active").length,
   appointmentsToday: appointments.filter(a => a.date === "2026-03-10").length,
-  pendingInvoices: invoices.filter(i => i.status === "sent" || i.status === "draft").length,
-  overduePayments: invoices.filter(i => i.status === "overdue").length,
+  pendingInvoices: invoices.filter(i => i.status === "sent" || i.status === "draft" || i.status === "issued").length,
+  overduePayments: invoices.filter(i => i.status === "overdue" || i.status === "partially_paid").length,
   monthlyRevenue: 1920,
   completedThisWeek: appointments.filter(a => a.status === "completed").length,
+  totalOutstanding: invoices.filter(i => ["sent", "issued", "overdue", "partially_paid"].includes(i.status)).reduce((s, i) => s + i.total - i.paidAmount, 0),
+  totalOverdue: invoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.total - i.paidAmount, 0),
 };
 
 // ──────────────────────────────────────────────────
@@ -230,6 +259,14 @@ export function getPatientInitials(id: string): string {
   return p ? `${p.firstName[0]}${p.lastName[0]}` : "??";
 }
 
+export function getAppointment(id: string): Appointment | undefined {
+  return appointments.find(a => a.id === id);
+}
+
+export function getInvoice(id: string): Invoice | undefined {
+  return invoices.find(i => i.id === id);
+}
+
 export function getAppointmentsForPatient(patientId: string): Appointment[] {
   return appointments.filter(a => a.patientId === patientId);
 }
@@ -240,6 +277,10 @@ export function getInvoicesForPatient(patientId: string): Invoice[] {
 
 export function getPaymentsForPatient(patientId: string): Payment[] {
   return payments.filter(p => p.patientId === patientId);
+}
+
+export function getPaymentsForInvoice(invoiceId: string): Payment[] {
+  return payments.filter(p => p.invoiceId === invoiceId);
 }
 
 export function getTasksForPatient(patientId: string): Task[] {
@@ -264,9 +305,37 @@ export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
 
 export const invoiceStatusLabels: Record<InvoiceStatus, string> = {
   draft: "Bozza",
+  issued: "Emessa",
   sent: "Inviata",
   paid: "Pagata",
+  partially_paid: "Parz. pagata",
   overdue: "Scaduta",
+  cancelled: "Annullata",
+};
+
+export const paymentMethodLabels: Record<PaymentMethod, string> = {
+  bank_transfer: "Bonifico",
+  cash: "Contanti",
+  card: "Carta",
+};
+
+export const paymentStatusLabels: Record<PaymentStatus, string> = {
+  completed: "Completato",
+  pending: "In attesa",
+  refunded: "Rimborsato",
+};
+
+export const taskStatusLabels: Record<TaskStatus, string> = {
+  todo: "Da fare",
+  in_progress: "In corso",
+  done: "Completato",
+};
+
+export const taskCategoryLabels: Record<string, string> = {
+  patient: "Paziente",
+  billing: "Fatturazione",
+  admin: "Amministrazione",
+  setup: "Configurazione",
 };
 
 export const consentStatusLabels: Record<ConsentStatus, string> = {
