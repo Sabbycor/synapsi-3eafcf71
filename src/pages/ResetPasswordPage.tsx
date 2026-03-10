@@ -115,9 +115,11 @@ export default function ResetPasswordPage() {
                   id="reset-password"
                   type="password"
                   autoComplete="new-password"
+                  autoFocus
                   placeholder="••••••••"
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? "reset-pw-error" : undefined}
+                  disabled={loading}
                   {...register("password")}
                 />
                 {errors.password && (
