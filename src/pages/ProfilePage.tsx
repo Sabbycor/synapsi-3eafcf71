@@ -128,7 +128,7 @@ export default function ProfilePage() {
           </div>
         )}
         {profileMissing && !fetchError && (
-          <div role="alert" className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning-foreground flex items-start gap-2">
+          <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-start gap-2">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <span>Il profilo utente non è stato trovato nel database. Contatta l'assistenza se il problema persiste.</span>
           </div>
@@ -157,7 +157,7 @@ export default function ProfilePage() {
               autoComplete="name"
               aria-invalid={!!nameError}
               aria-describedby={nameError ? "profile-name-error" : undefined}
-              disabled={profileMissing}
+              disabled={profileMissing || saving}
             />
             {nameError && (
               <p id="profile-name-error" role="alert" className="text-xs text-destructive">{nameError}</p>
@@ -168,11 +168,12 @@ export default function ProfilePage() {
             <Input id="profile-email" value={user?.email || ""} disabled className="opacity-60" />
             <p className="text-xs text-muted-foreground">L'email non può essere modificata da qui.</p>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-role">Ruolo</Label>
-            <Input id="profile-role" value={role || "—"} disabled className="opacity-60 capitalize" />
-            <p className="text-[11px] text-muted-foreground/60 italic">Il ruolo è gestito dal sistema.</p>
-          </div>
+          {role && (
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-role">Ruolo</Label>
+              <Input id="profile-role" value={role} disabled className="opacity-60 capitalize" />
+            </div>
+          )}
 
           <Button className="w-full gap-2" onClick={handleSave} disabled={saving || !dirty || profileMissing}>
             {saving ? (

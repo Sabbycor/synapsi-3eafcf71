@@ -96,6 +96,7 @@ export default function LoginPage() {
                 id="login-email"
                 type="email"
                 autoComplete="email"
+                autoFocus
                 placeholder="nome@esempio.it"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "login-email-error" : undefined}
@@ -139,7 +140,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-5 pt-4 border-t border-border text-center">
             <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               Password dimenticata?
             </Link>
