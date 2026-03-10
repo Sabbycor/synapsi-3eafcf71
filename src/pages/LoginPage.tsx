@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
   email: z.string().email("Email non valida"),
@@ -17,6 +20,8 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,17 +29,32 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
     setError("");
-    setTimeout(() => {
-      setLoading(false);
-      if (data.email === "test@test.com") {
-        setError("Credenziali non valide");
-      } else {
-        navigate("/dashboard");
+    try {
+      const { error } = await signIn(data.email, data.password);
+      if (error) {
+        setError(mapAuthError(error.message));
+        setLoading(false);
+        return;
       }
-    }, 1200);
+      // Check if practice profile exists for redirect logic
+      const { data: session } = await supabase.auth.getSession();
+      if (session?.session) {
+        const { data: profile } = await supabase
+          .from("practice_profiles")
+          .select("id")
+          .eq("user_id", session.session.user.id)
+          .maybeSingle();
+
+        navigate(profile ? "/dashboard" : "/onboarding", { replace: true });
+      }
+    } catch {
+      setError("Errore di rete. Riprova più tardi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,4 +111,11 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function mapAuthError(msg: string): string {
+  if (msg.includes("Invalid login credentials")) return "Email o password non corretti.";
+  if (msg.includes("Email not confirmed")) return "Conferma la tua email prima di accedere.";
+  if (msg.includes("Too many requests")) return "Troppi tentativi. Riprova tra qualche minuto.";
+  return "Errore di autenticazione. Riprova.";
 }
