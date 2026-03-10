@@ -41,7 +41,7 @@ export default function RegisterPage() {
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
             <Sparkles size={20} className="text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-2xl text-foreground">AURA</span>
+          <span className="font-display font-bold text-2xl text-foreground">Synapsi</span>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-card">
