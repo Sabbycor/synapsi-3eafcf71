@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -44,7 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailRedirectTo: window.location.origin,
       },
     });
-    return { error: error as Error | null };
+    // Supabase returns a fake user with empty identities when email is already registered
+    // and email confirmation is enabled (to prevent email enumeration)
+    const fakeSignup = !error && data?.user?.identities?.length === 0;
+    return { error: error as Error | null, fakeSignup };
   };
 
   const signIn = async (email: string, password: string) => {
