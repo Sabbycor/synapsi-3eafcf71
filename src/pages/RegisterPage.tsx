@@ -12,8 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const schema = z.object({
-  name: z.string().min(1, "Il nome è obbligatorio").min(2, "Inserisci almeno 2 caratteri"),
-  email: z.string().min(1, "L'email è obbligatoria").email("Inserisci un indirizzo email valido"),
+  name: z.string()
+    .transform((v) => v.trim())
+    .pipe(z.string().min(1, "Il nome è obbligatorio").min(2, "Inserisci almeno 2 caratteri")),
+  email: z.string()
+    .transform((v) => v.trim().toLowerCase())
+    .pipe(z.string().min(1, "L'email è obbligatoria").email("Inserisci un indirizzo email valido")),
   password: z.string().min(1, "La password è obbligatoria").min(6, "La password deve avere almeno 6 caratteri"),
   confirmPassword: z.string().min(1, "Conferma la password"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -45,9 +49,16 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
     try {
-      const { error } = await signUp(data.email, data.password, data.name);
+      const { error, fakeSignup } = await signUp(data.email, data.password, data.name);
       if (error) {
         setError(mapAuthError(error.message));
+        setLoading(false);
+        return;
+      }
+
+      // Detect fake signup (email already registered, Supabase hides the error)
+      if (fakeSignup) {
+        setError("Questa email è già registrata. Prova ad accedere.");
         setLoading(false);
         return;
       }
@@ -55,14 +66,12 @@ export default function RegisterPage() {
       // Check if a session was created (auto-confirm enabled) or email confirmation is needed
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData?.session) {
-        // Auto-confirmed: redirect to onboarding
         toast({
           title: "Account creato",
           description: "Benvenuto in Synapsi!",
         });
         navigate("/onboarding", { replace: true });
       } else {
-        // Email confirmation required: show confirmation message
         setEmailSent(true);
         toast({
           title: "Account creato",
@@ -117,6 +126,7 @@ export default function RegisterPage() {
                   placeholder="Dott. Mario Rossi"
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? "reg-name-error" : undefined}
+                  disabled={loading}
                   {...register("name")}
                 />
                 {errors.name && (
@@ -134,6 +144,7 @@ export default function RegisterPage() {
                   placeholder="nome@esempio.it"
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "reg-email-error" : undefined}
+                  disabled={loading}
                   {...register("email")}
                 />
                 {errors.email && (
@@ -151,6 +162,7 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? "reg-password-error" : undefined}
+                  disabled={loading}
                   {...register("password")}
                 />
                 {errors.password && (
@@ -168,6 +180,7 @@ export default function RegisterPage() {
                   placeholder="••••••••"
                   aria-invalid={!!errors.confirmPassword}
                   aria-describedby={errors.confirmPassword ? "reg-confirm-error" : undefined}
+                  disabled={loading}
                   {...register("confirmPassword")}
                 />
                 {errors.confirmPassword && (
@@ -207,5 +220,6 @@ function mapAuthError(msg: string): string {
   if (msg.includes("Password should be at least")) return "La password deve avere almeno 6 caratteri.";
   if (msg.includes("Unable to validate email")) return "Indirizzo email non valido.";
   if (msg.includes("Too many requests")) return "Troppi tentativi. Riprova tra qualche minuto.";
+  if (msg.includes("Signups not allowed")) return "Le registrazioni non sono attive al momento.";
   return "Errore durante la registrazione. Riprova.";
 }
