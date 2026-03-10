@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Save, Check, Loader2, User } from "lucide-react";
+import { LogOut, Save, Check, Loader2, User, AlertCircle } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -21,16 +21,24 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [originalName, setOriginalName] = useState("");
+  const [profileMissing, setProfileMissing] = useState(false);
+  const [nameError, setNameError] = useState("");
 
   useEffect(() => {
     if (!user) return;
     const fetchProfile = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("users")
         .select("full_name, role")
         .eq("id", user.id)
         .maybeSingle();
-      if (data) {
+
+      if (error || !data) {
+        setProfileMissing(true);
+        // Fall back to auth metadata
+        setFullName(user.user_metadata?.full_name || "");
+        setOriginalName(user.user_metadata?.full_name || "");
+      } else {
         setFullName(data.full_name || "");
         setOriginalName(data.full_name || "");
         setRole(data.role || "");
@@ -44,20 +52,27 @@ export default function ProfilePage() {
     setFullName(value);
     setDirty(value !== originalName);
     setSaved(false);
+    setNameError("");
   };
 
   const handleSave = async () => {
     if (!user || !dirty) return;
+    const trimmed = fullName.trim();
+    if (trimmed.length < 2) {
+      setNameError("Il nome deve avere almeno 2 caratteri.");
+      return;
+    }
     setSaving(true);
     const { error } = await supabase
       .from("users")
-      .update({ full_name: fullName })
+      .update({ full_name: trimmed })
       .eq("id", user.id);
 
     if (error) {
       toast({ title: "Errore", description: "Impossibile salvare le modifiche. Riprova.", variant: "destructive" });
     } else {
-      setOriginalName(fullName);
+      setFullName(trimmed);
+      setOriginalName(trimmed);
       setDirty(false);
       setSaved(true);
       toast({ title: "Profilo aggiornato", description: "Le modifiche sono state salvate." });
@@ -84,6 +99,13 @@ export default function ProfilePage() {
   return (
     <PageContainer>
       <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
+        {profileMissing && (
+          <div role="alert" className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning-foreground flex items-start gap-2">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <span>Il profilo utente non è stato trovato nel database. Alcune funzionalità potrebbero essere limitate.</span>
+          </div>
+        )}
+
         {/* Profile card */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card flex items-center gap-4">
           <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary shrink-0" aria-hidden="true">
@@ -105,7 +127,13 @@ export default function ProfilePage() {
               value={fullName}
               onChange={(e) => handleNameChange(e.target.value)}
               autoComplete="name"
+              aria-invalid={!!nameError}
+              aria-describedby={nameError ? "profile-name-error" : undefined}
+              disabled={profileMissing}
             />
+            {nameError && (
+              <p id="profile-name-error" role="alert" className="text-xs text-destructive">{nameError}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="profile-email">Email</Label>
@@ -118,7 +146,7 @@ export default function ProfilePage() {
             <p className="text-[11px] text-muted-foreground/60 italic">Il ruolo è gestito dal sistema.</p>
           </div>
 
-          <Button className="w-full gap-2" onClick={handleSave} disabled={saving || !dirty}>
+          <Button className="w-full gap-2" onClick={handleSave} disabled={saving || !dirty || profileMissing}>
             {saving ? (
               <><Loader2 className="animate-spin" size={14} /> Salvataggio…</>
             ) : saved ? (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,7 +19,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { session, loading: authLoading, signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -27,6 +27,11 @@ export default function LoginPage() {
     resolver: zodResolver(schema),
     mode: "onBlur",
   });
+
+  // Redirect already-authenticated users
+  if (!authLoading && session) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const onSubmit = async (data: FormData) => {
     setLoading(true);
@@ -38,12 +43,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      const { data: session } = await supabase.auth.getSession();
-      if (session?.session) {
+      // After successful signIn, check for practice profile to decide redirect
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData?.session) {
         const { data: profile } = await supabase
           .from("practice_profiles")
           .select("id")
-          .eq("user_id", session.session.user.id)
+          .eq("user_id", sessionData.session.user.id)
           .maybeSingle();
 
         navigate(profile ? "/dashboard" : "/onboarding", { replace: true });
