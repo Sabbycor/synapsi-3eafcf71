@@ -13,6 +13,7 @@ import PreviewPage from "./pages/PreviewPage";
 import DashboardPage from "./pages/DashboardPage";
 import PatientsPage from "./pages/PatientsPage";
 import CalendarPage from "./pages/CalendarPage";
+import PatientDetailPage from "./pages/PatientDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 
