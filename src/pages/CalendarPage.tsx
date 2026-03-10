@@ -114,7 +114,7 @@ export default function CalendarPage() {
   };
 
   const dateLabel = (() => {
-    const d = new Date(selectedDate);
+    const d = parseLocalDate(selectedDate);
     if (view === "day") return d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
     if (view === "week") return `${weekDates[0].dayNum}–${weekDates[6].dayNum} Marzo 2026`;
     return d.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
