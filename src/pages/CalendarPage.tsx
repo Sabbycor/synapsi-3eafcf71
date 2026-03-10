@@ -23,9 +23,15 @@ type ViewMode = "day" | "week" | "month";
 const DAYS_SHORT = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
 const STATUSES: (AppointmentStatus | "all")[] = ["all", "scheduled", "confirmed", "completed", "cancelled", "no_show"];
 
-// Helper to generate week dates around March 10
+/** Parse "YYYY-MM-DD" as a local date (avoids UTC midnight shift). */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Helper to generate week dates around a given date
 function getWeekDates(baseDate: string): { date: string; dayLabel: string; dayNum: number }[] {
-  const d = new Date(baseDate);
+  const d = parseLocalDate(baseDate);
   const dayOfWeek = d.getDay() === 0 ? 6 : d.getDay() - 1; // Mon=0
   const monday = new Date(d);
   monday.setDate(d.getDate() - dayOfWeek);
