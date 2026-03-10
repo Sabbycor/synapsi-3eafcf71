@@ -1,36 +1,24 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, Calendar, User, MoreHorizontal, Receipt, CreditCard, ListTodo } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-
-const navItems = [
-  { path: "/dashboard", icon: Home, label: "Home" },
-  { path: "/patients", icon: Users, label: "Pazienti" },
-  { path: "/calendar", icon: Calendar, label: "Agenda" },
-  { path: "/profile", icon: User, label: "Profilo" },
-];
-
-const moreItems = [
-  { path: "/invoices", icon: Receipt, label: "Fatture" },
-  { path: "/payments", icon: CreditCard, label: "Pagamenti" },
-  { path: "/tasks", icon: ListTodo, label: "Attività" },
-];
+import { bottomNavItems, moreNavItems } from "./navConfig";
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showMore, setShowMore] = useState(false);
 
-  const isMoreActive = moreItems.some(i => location.pathname.startsWith(i.path));
+  const isMoreActive = moreNavItems.some(i => location.pathname.startsWith(i.path));
 
   return (
     <>
       {/* More menu overlay */}
       {showMore && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowMore(false)}>
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setShowMore(false)}>
           <div className="absolute bottom-16 left-0 right-0 safe-bottom">
             <div className="mx-4 mb-2 rounded-xl border border-border bg-card shadow-elevated overflow-hidden animate-slide-up">
-              {moreItems.map((item) => {
+              {moreNavItems.map((item) => {
                 const isActive = location.pathname.startsWith(item.path);
                 return (
                   <button
@@ -57,7 +45,7 @@ export function BottomNav() {
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card safe-bottom md:hidden">
         <div className="flex items-center justify-around h-16">
-          {navItems.map((item) => {
+          {bottomNavItems.map((item) => {
             const isActive = location.pathname === item.path || 
               (item.path === "/patients" && location.pathname.startsWith("/patients"));
             return (
