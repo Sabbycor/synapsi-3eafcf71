@@ -117,6 +117,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 aria-invalid={!!errors.password}
                 aria-describedby={errors.password ? "login-password-error" : undefined}
+                disabled={loading}
                 {...register("password")}
               />
               {errors.password && (
