@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,23 +25,27 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [validToken, setValidToken] = useState<boolean | null>(null);
+  const recoveryDetected = useRef(false);
 
   useEffect(() => {
-    // Supabase puts recovery token in the URL hash; the SDK auto-exchanges it.
-    // We listen for the PASSWORD_RECOVERY event to confirm a valid session.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
+        recoveryDetected.current = true;
         setValidToken(true);
       }
     });
 
-    // Also check if we already have a session (token may have been exchanged before mount)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setValidToken(true);
-      else setTimeout(() => setValidToken((v) => v ?? false), 2000);
-    });
+    // Give the SDK time to process the hash fragment and fire PASSWORD_RECOVERY
+    const timeout = setTimeout(() => {
+      if (!recoveryDetected.current) {
+        setValidToken(false);
+      }
+    }, 3000);
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
