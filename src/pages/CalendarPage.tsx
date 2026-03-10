@@ -215,7 +215,7 @@ export default function CalendarPage() {
         )}
 
         {/* Status filter chips */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-1.5 pb-1">
           {STATUSES.map(s => (
             <button
               key={s}
