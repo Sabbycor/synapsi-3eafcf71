@@ -99,6 +99,7 @@ export default function LoginPage() {
                 placeholder="nome@esempio.it"
                 aria-invalid={!!errors.email}
                 aria-describedby={errors.email ? "login-email-error" : undefined}
+                disabled={loading}
                 {...register("email")}
               />
               {errors.email && (
