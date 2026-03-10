@@ -132,6 +132,7 @@ export default function RegisterPage() {
                 <Input
                   id="reg-name"
                   autoComplete="name"
+                  autoFocus
                   placeholder="Dott. Mario Rossi"
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? "reg-name-error" : undefined}
@@ -162,41 +163,48 @@ export default function RegisterPage() {
                   </p>
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="reg-password">Password</Label>
-                <Input
-                  id="reg-password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  aria-invalid={!!errors.password}
-                  aria-describedby={errors.password ? "reg-password-error" : undefined}
-                  disabled={loading}
-                  {...register("password")}
-                />
-                {errors.password && (
-                  <p id="reg-password-error" role="alert" className="text-xs text-destructive">
-                    {errors.password.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="reg-confirm">Conferma password</Label>
-                <Input
-                  id="reg-confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  aria-invalid={!!errors.confirmPassword}
-                  aria-describedby={errors.confirmPassword ? "reg-confirm-error" : undefined}
-                  disabled={loading}
-                  {...register("confirmPassword")}
-                />
-                {errors.confirmPassword && (
-                  <p id="reg-confirm-error" role="alert" className="text-xs text-destructive">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
+
+              <div className="pt-2 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-password">Password</Label>
+                  <Input
+                    id="reg-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? "reg-password-error" : "reg-password-hint"}
+                    disabled={loading}
+                    {...register("password")}
+                  />
+                  {errors.password ? (
+                    <p id="reg-password-error" role="alert" className="text-xs text-destructive">
+                      {errors.password.message}
+                    </p>
+                  ) : (
+                    <p id="reg-password-hint" className="text-xs text-muted-foreground">
+                      Almeno 6 caratteri
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="reg-confirm">Conferma password</Label>
+                  <Input
+                    id="reg-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    aria-invalid={!!errors.confirmPassword}
+                    aria-describedby={errors.confirmPassword ? "reg-confirm-error" : undefined}
+                    disabled={loading}
+                    {...register("confirmPassword")}
+                  />
+                  {errors.confirmPassword && (
+                    <p id="reg-confirm-error" role="alert" className="text-xs text-destructive">
+                      {errors.confirmPassword.message}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {error && (
