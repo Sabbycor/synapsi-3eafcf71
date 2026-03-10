@@ -22,20 +22,27 @@ export default function ProfilePage() {
   const [dirty, setDirty] = useState(false);
   const [originalName, setOriginalName] = useState("");
   const [profileMissing, setProfileMissing] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [nameError, setNameError] = useState("");
 
-  useEffect(() => {
+  const fetchProfile = async () => {
     if (!user) return;
-    const fetchProfile = async () => {
+    setLoading(true);
+    setFetchError(false);
+    setProfileMissing(false);
+    try {
       const { data, error } = await supabase
         .from("users")
         .select("full_name, role")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        setFetchError(true);
+        setFullName(user.user_metadata?.full_name || "");
+        setOriginalName(user.user_metadata?.full_name || "");
+      } else if (!data) {
         setProfileMissing(true);
-        // Fall back to auth metadata
         setFullName(user.user_metadata?.full_name || "");
         setOriginalName(user.user_metadata?.full_name || "");
       } else {
@@ -43,8 +50,16 @@ export default function ProfilePage() {
         setOriginalName(data.full_name || "");
         setRole(data.role || "");
       }
+    } catch {
+      setFetchError(true);
+      setFullName(user.user_metadata?.full_name || "");
+      setOriginalName(user.user_metadata?.full_name || "");
+    } finally {
       setLoading(false);
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, [user]);
 
@@ -82,8 +97,12 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile effettuare il logout. Riprova.", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -99,10 +118,19 @@ export default function ProfilePage() {
   return (
     <PageContainer>
       <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
-        {profileMissing && (
+        {fetchError && (
+          <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-start gap-2">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span>Impossibile caricare il profilo.</span>
+              <button onClick={fetchProfile} className="ml-1 underline font-medium hover:no-underline">Riprova</button>
+            </div>
+          </div>
+        )}
+        {profileMissing && !fetchError && (
           <div role="alert" className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning-foreground flex items-start gap-2">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
-            <span>Il profilo utente non è stato trovato nel database. Alcune funzionalità potrebbero essere limitate.</span>
+            <span>Il profilo utente non è stato trovato nel database. Contatta l'assistenza se il problema persiste.</span>
           </div>
         )}
 
