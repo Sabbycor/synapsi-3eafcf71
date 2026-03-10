@@ -137,6 +137,7 @@ export default function ResetPasswordPage() {
                   placeholder="••••••••"
                   aria-invalid={!!errors.confirmPassword}
                   aria-describedby={errors.confirmPassword ? "reset-confirm-error" : undefined}
+                  disabled={loading}
                   {...register("confirmPassword")}
                 />
                 {errors.confirmPassword && (
