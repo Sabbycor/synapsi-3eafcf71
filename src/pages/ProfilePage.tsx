@@ -128,7 +128,7 @@ export default function ProfilePage() {
           </div>
         )}
         {profileMissing && !fetchError && (
-          <div role="alert" className="rounded-lg bg-warning/10 border border-warning/30 p-3 text-sm text-warning-foreground flex items-start gap-2">
+          <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-start gap-2">
             <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <span>Il profilo utente non è stato trovato nel database. Contatta l'assistenza se il problema persiste.</span>
           </div>
