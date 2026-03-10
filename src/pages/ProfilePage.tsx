@@ -25,18 +25,24 @@ export default function ProfilePage() {
   const [fetchError, setFetchError] = useState(false);
   const [nameError, setNameError] = useState("");
 
-  useEffect(() => {
+  const fetchProfile = async () => {
     if (!user) return;
-    const fetchProfile = async () => {
+    setLoading(true);
+    setFetchError(false);
+    setProfileMissing(false);
+    try {
       const { data, error } = await supabase
         .from("users")
         .select("full_name, role")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        setFetchError(true);
+        setFullName(user.user_metadata?.full_name || "");
+        setOriginalName(user.user_metadata?.full_name || "");
+      } else if (!data) {
         setProfileMissing(true);
-        // Fall back to auth metadata
         setFullName(user.user_metadata?.full_name || "");
         setOriginalName(user.user_metadata?.full_name || "");
       } else {
@@ -44,8 +50,16 @@ export default function ProfilePage() {
         setOriginalName(data.full_name || "");
         setRole(data.role || "");
       }
+    } catch {
+      setFetchError(true);
+      setFullName(user.user_metadata?.full_name || "");
+      setOriginalName(user.user_metadata?.full_name || "");
+    } finally {
       setLoading(false);
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, [user]);
 
