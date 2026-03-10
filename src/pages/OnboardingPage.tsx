@@ -238,9 +238,9 @@ export default function OnboardingPage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium text-foreground capitalize">{value}</span>
+    <div className="grid grid-cols-[7rem_1fr] gap-3 items-baseline">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="font-medium text-foreground capitalize text-right break-words min-w-0">{value}</span>
     </div>
   );
 }
