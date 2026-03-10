@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [dirty, setDirty] = useState(false);
   const [originalName, setOriginalName] = useState("");
   const [profileMissing, setProfileMissing] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   const [nameError, setNameError] = useState("");
 
   useEffect(() => {
