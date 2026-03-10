@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2, ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const schema = z.object({
   email: z.string().email("Email non valida"),
@@ -17,17 +18,30 @@ type FormData = z.infer<typeof schema>;
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = () => {
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    setError("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        setError("Errore nell'invio. Riprova.");
+        setLoading(false);
+        return;
+      }
       setSent(true);
-    }, 1200);
+    } catch {
+      setError("Errore di rete. Riprova più tardi.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,12 +72,23 @@ export default function ForgotPasswordPage() {
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
 
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2 className="animate-spin" size={16} />}
                 {loading ? "Invio in corso..." : "Invia link di reset"}
               </Button>
             </form>
           )}
+
+          {/* TODO: /reset-password page not yet implemented */}
+          <p className="text-xs text-muted-foreground mt-4 text-center">
+            TODO: La pagina di reset password (/reset-password) non è ancora implementata.
+          </p>
         </div>
 
         <div className="text-center mt-6">

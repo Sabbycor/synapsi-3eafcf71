@@ -7,31 +7,54 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
   name: z.string().min(2, "Minimo 2 caratteri"),
   email: z.string().email("Email non valida"),
   password: z.string().min(6, "Minimo 6 caratteri"),
+  confirmPassword: z.string().min(6, "Minimo 6 caratteri"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Le password non coincidono",
+  path: ["confirmPassword"],
 });
 
 type FormData = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = () => {
+  const onSubmit = async (data: FormData) => {
     setLoading(true);
-    setTimeout(() => {
+    setError("");
+    try {
+      const { error } = await signUp(data.email, data.password, data.name);
+      if (error) {
+        setError(mapAuthError(error.message));
+        setLoading(false);
+        return;
+      }
+      toast({
+        title: "Account creato",
+        description: "Controlla la tua email per confermare la registrazione.",
+      });
+      // Supabase may auto-confirm or require email confirmation depending on settings.
+      // Try navigating to onboarding; if session doesn't exist, login page will catch it.
+      setTimeout(() => navigate("/onboarding"), 1500);
+    } catch {
+      setError("Errore di rete. Riprova più tardi.");
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => navigate("/onboarding"), 1000);
-    }, 1200);
+    }
   };
 
   return (
@@ -48,34 +71,39 @@ export default function RegisterPage() {
           <h1 className="font-display text-xl font-bold text-foreground mb-1">Crea il tuo account</h1>
           <p className="text-sm text-muted-foreground mb-6">Inizia a usare Synapsi in pochi minuti</p>
 
-          {success ? (
-            <div className="rounded-lg bg-success/10 border border-success/20 p-4 text-sm text-success text-center">
-              Account creato! Reindirizzamento...
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome completo</Label>
+              <Input id="name" placeholder="Dott. Mario Rossi" {...register("name")} />
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome completo</Label>
-                <Input id="name" placeholder="Dott. Mario Rossi" {...register("name")} />
-                {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="nome@esempio.it" {...register("email")} />
-                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="nome@esempio.it" {...register("email")} />
+              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
+              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Conferma password</Label>
+              <Input id="confirmPassword" type="password" placeholder="••••••••" {...register("confirmPassword")} />
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+            </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2 className="animate-spin" size={16} />}
-                {loading ? "Creazione in corso..." : "Crea account"}
-              </Button>
-            </form>
-          )}
+            {error && (
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="animate-spin" size={16} />}
+              {loading ? "Creazione in corso..." : "Crea account"}
+            </Button>
+          </form>
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
@@ -87,4 +115,12 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function mapAuthError(msg: string): string {
+  if (msg.includes("User already registered")) return "Questa email è già registrata.";
+  if (msg.includes("Password should be at least")) return "La password deve avere almeno 6 caratteri.";
+  if (msg.includes("Unable to validate email")) return "Indirizzo email non valido.";
+  if (msg.includes("Too many requests")) return "Troppi tentativi. Riprova tra qualche minuto.";
+  return "Errore durante la registrazione. Riprova.";
 }
