@@ -1,5 +1,5 @@
 // ============================================================
-// AURA AI — Centralized Mock Data
+// Synapsi — Centralized Mock Data
 // ============================================================
 
 export type AppointmentStatus = "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show";

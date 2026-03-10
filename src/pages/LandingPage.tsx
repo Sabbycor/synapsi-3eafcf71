@@ -78,7 +78,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="container max-w-xl md:max-w-4xl mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
-            © 2026 AURA · Progettato per psicologi indipendenti
+            © 2026 Synapsi · Progettato per psicologi indipendenti
           </p>
         </div>
       </footer>

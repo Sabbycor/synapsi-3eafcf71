@@ -72,7 +72,7 @@ export default function ProfilePage() {
             <LogOut size={16} /> Esci dall'account
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">AURA AI v1.0 · Frontend Preview</p>
+          <p className="text-xs text-center text-muted-foreground">Synapsi v1.0 · Frontend Preview</p>
         </div>
       </PageContainer>
     );
