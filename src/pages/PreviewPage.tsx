@@ -29,7 +29,7 @@ export default function PreviewPage() {
             Configurazione completata
           </div>
           <h1 className="font-display text-2xl font-bold text-primary-foreground mb-2">
-            Ecco come sarà la tua AURA
+            Ecco come sarà la tua Synapsi
           </h1>
           <p className="text-primary-foreground/70 text-sm">
             Un'anteprima della tua dashboard e delle funzionalità principali

@@ -11,7 +11,7 @@ export function TopBar() {
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
             <Sparkles size={16} className="text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-lg text-foreground">AURA</span>
+          <span className="font-display font-bold text-lg text-foreground">Synapsi</span>
         </button>
       </div>
     </header>

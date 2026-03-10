@@ -23,7 +23,7 @@ export default function LandingPage() {
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
               <Sparkles size={16} className="text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg text-foreground">AURA</span>
+            <span className="font-display font-bold text-lg text-foreground">Synapsi</span>
           </div>
           <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>
             Accedi
@@ -78,7 +78,7 @@ export default function LandingPage() {
       <footer className="border-t border-border py-8">
         <div className="container max-w-xl md:max-w-4xl mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
-            © 2026 AURA · Progettato per psicologi indipendenti
+            © 2026 Synapsi · Progettato per psicologi indipendenti
           </p>
         </div>
       </footer>
