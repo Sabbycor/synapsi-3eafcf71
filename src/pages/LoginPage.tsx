@@ -45,23 +45,28 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     setError("");
+    const trimmedEmail = data.email.trim().toLowerCase();
     try {
-      const { error } = await signIn(data.email, data.password);
+      const { error } = await signIn(trimmedEmail, data.password);
       if (error) {
         setError(mapAuthError(error.message));
         setLoading(false);
         return;
       }
-      // After successful signIn, check for practice profile to decide redirect
+      // signIn already sets session via onAuthStateChange; use returned session user
       const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData?.session) {
+      const userId = sessionData?.session?.user?.id;
+      if (userId) {
         const { data: profile } = await supabase
           .from("practice_profiles")
           .select("id")
-          .eq("user_id", sessionData.session.user.id)
+          .eq("user_id", userId)
           .maybeSingle();
 
         navigate(profile ? "/dashboard" : "/onboarding", { replace: true });
+      } else {
+        // Fallback — session should exist after signInWithPassword
+        navigate("/dashboard", { replace: true });
       }
     } catch {
       setError("Errore di rete. Riprova più tardi.");
