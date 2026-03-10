@@ -106,7 +106,7 @@ export default function CalendarPage() {
   }, [selectedDate, view, statusFilter, weekDates]);
 
   const navigate = (dir: number) => {
-    const d = new Date(selectedDate);
+    const d = parseLocalDate(selectedDate);
     if (view === "day") d.setDate(d.getDate() + dir);
     else if (view === "week") d.setDate(d.getDate() + dir * 7);
     else d.setMonth(d.getMonth() + dir);
