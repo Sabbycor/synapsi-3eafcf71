@@ -19,6 +19,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [originalName, setOriginalName] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -30,6 +32,7 @@ export default function ProfilePage() {
         .maybeSingle();
       if (data) {
         setFullName(data.full_name || "");
+        setOriginalName(data.full_name || "");
         setRole(data.role || "");
       }
       setLoading(false);
@@ -37,8 +40,14 @@ export default function ProfilePage() {
     fetchProfile();
   }, [user]);
 
+  const handleNameChange = (value: string) => {
+    setFullName(value);
+    setDirty(value !== originalName);
+    setSaved(false);
+  };
+
   const handleSave = async () => {
-    if (!user) return;
+    if (!user || !dirty) return;
     setSaving(true);
     const { error } = await supabase
       .from("users")
@@ -46,11 +55,13 @@ export default function ProfilePage() {
       .eq("id", user.id);
 
     if (error) {
-      toast({ title: "Errore", description: "Impossibile salvare. Riprova.", variant: "destructive" });
+      toast({ title: "Errore", description: "Impossibile salvare le modifiche. Riprova.", variant: "destructive" });
     } else {
+      setOriginalName(fullName);
+      setDirty(false);
       setSaved(true);
-      toast({ title: "Salvato", description: "Profilo aggiornato." });
-      setTimeout(() => setSaved(false), 2000);
+      toast({ title: "Profilo aggiornato", description: "Le modifiche sono state salvate." });
+      setTimeout(() => setSaved(false), 2500);
     }
     setSaving(false);
   };
@@ -75,36 +86,41 @@ export default function ProfilePage() {
       <div className="space-y-6 animate-fade-in max-w-lg mx-auto">
         {/* Profile card */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card flex items-center gap-4">
-          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary shrink-0">
+          <div className="flex items-center justify-center w-14 h-14 rounded-full bg-primary shrink-0" aria-hidden="true">
             <User size={24} className="text-primary-foreground" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-display font-semibold text-foreground">{fullName || "Utente"}</p>
+            <p className="font-display font-semibold text-foreground truncate">{fullName || "Utente"}</p>
             <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
-            {role && <p className="text-xs text-muted-foreground capitalize">{role}</p>}
+            {role && <p className="text-xs text-muted-foreground capitalize mt-0.5">{role}</p>}
           </div>
         </div>
 
         {/* Edit form */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
-          <div className="space-y-2">
-            <Label>Nome completo</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-name">Nome completo</Label>
+            <Input
+              id="profile-name"
+              value={fullName}
+              onChange={(e) => handleNameChange(e.target.value)}
+              autoComplete="name"
+            />
           </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={user?.email || ""} disabled className="opacity-60" />
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-email">Email</Label>
+            <Input id="profile-email" value={user?.email || ""} disabled className="opacity-60" />
             <p className="text-xs text-muted-foreground">L'email non può essere modificata da qui.</p>
           </div>
-          <div className="space-y-2">
-            <Label>Ruolo</Label>
-            <Input value={role} disabled className="opacity-60 capitalize" />
-            <p className="text-xs text-muted-foreground">TODO: Il ruolo è gestito dal sistema.</p>
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-role">Ruolo</Label>
+            <Input id="profile-role" value={role || "—"} disabled className="opacity-60 capitalize" />
+            <p className="text-[11px] text-muted-foreground/60 italic">Il ruolo è gestito dal sistema.</p>
           </div>
 
-          <Button className="w-full" onClick={handleSave} disabled={saving}>
+          <Button className="w-full gap-2" onClick={handleSave} disabled={saving || !dirty}>
             {saving ? (
-              <><Loader2 className="animate-spin" size={14} /> Salvataggio...</>
+              <><Loader2 className="animate-spin" size={14} /> Salvataggio…</>
             ) : saved ? (
               <><Check size={14} /> Salvato</>
             ) : (
@@ -115,7 +131,7 @@ export default function ProfilePage() {
 
         <Button
           variant="outline"
-          className="w-full text-destructive hover:text-destructive hover:bg-destructive/5"
+          className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/5"
           onClick={handleLogout}
         >
           <LogOut size={16} /> Esci dall'account

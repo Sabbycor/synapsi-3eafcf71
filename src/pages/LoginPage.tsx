@@ -9,11 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
-  email: z.string().email("Email non valida"),
-  password: z.string().min(6, "Minimo 6 caratteri"),
+  email: z.string().min(1, "L'email è obbligatoria").email("Inserisci un indirizzo email valido"),
+  password: z.string().min(1, "La password è obbligatoria").min(6, "La password deve avere almeno 6 caratteri"),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -21,12 +20,12 @@ type FormData = z.infer<typeof schema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: FormData) => {
@@ -39,7 +38,6 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      // Check if practice profile exists for redirect logic
       const { data: session } = await supabase.auth.getSession();
       if (session?.session) {
         const { data: profile } = await supabase
@@ -58,7 +56,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
@@ -69,34 +67,58 @@ export default function LoginPage() {
 
         <div className="rounded-xl border border-border bg-card p-6 shadow-card">
           <h1 className="font-display text-xl font-bold text-foreground mb-1">Bentornato</h1>
-          <p className="text-sm text-muted-foreground mb-6">Accedi al tuo account</p>
+          <p className="text-sm text-muted-foreground mb-6">Accedi al tuo account per continuare</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="nome@esempio.it" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="login-email">Email</Label>
+              <Input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                placeholder="nome@esempio.it"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "login-email-error" : undefined}
+                {...register("email")}
+              />
+              {errors.email && (
+                <p id="login-email-error" role="alert" className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="login-password">Password</Label>
+              <Input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "login-password-error" : undefined}
+                {...register("password")}
+              />
+              {errors.password && (
+                <p id="login-password-error" role="alert" className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+              <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full gap-2" disabled={loading}>
               {loading && <Loader2 className="animate-spin" size={16} />}
-              {loading ? "Accesso in corso..." : "Accedi"}
+              {loading ? "Accesso in corso…" : "Accedi"}
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <Link to="/forgot-password" className="text-primary hover:underline">
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               Password dimenticata?
             </Link>
           </div>

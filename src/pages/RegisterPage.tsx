@@ -11,10 +11,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
-  name: z.string().min(2, "Minimo 2 caratteri"),
-  email: z.string().email("Email non valida"),
-  password: z.string().min(6, "Minimo 6 caratteri"),
-  confirmPassword: z.string().min(6, "Minimo 6 caratteri"),
+  name: z.string().min(1, "Il nome è obbligatorio").min(2, "Inserisci almeno 2 caratteri"),
+  email: z.string().min(1, "L'email è obbligatoria").email("Inserisci un indirizzo email valido"),
+  password: z.string().min(1, "La password è obbligatoria").min(6, "La password deve avere almeno 6 caratteri"),
+  confirmPassword: z.string().min(1, "Conferma la password"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Le password non coincidono",
   path: ["confirmPassword"],
@@ -31,6 +31,7 @@ export default function RegisterPage() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: FormData) => {
@@ -47,8 +48,6 @@ export default function RegisterPage() {
         title: "Account creato",
         description: "Controlla la tua email per confermare la registrazione.",
       });
-      // Supabase may auto-confirm or require email confirmation depending on settings.
-      // Try navigating to onboarding; if session doesn't exist, login page will catch it.
       setTimeout(() => navigate("/onboarding"), 1500);
     } catch {
       setError("Errore di rete. Riprova più tardi.");
@@ -58,7 +57,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
@@ -71,37 +70,84 @@ export default function RegisterPage() {
           <h1 className="font-display text-xl font-bold text-foreground mb-1">Crea il tuo account</h1>
           <p className="text-sm text-muted-foreground mb-6">Inizia a usare Synapsi in pochi minuti</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input id="name" placeholder="Dott. Mario Rossi" {...register("name")} />
-              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-name">Nome completo</Label>
+              <Input
+                id="reg-name"
+                autoComplete="name"
+                placeholder="Dott. Mario Rossi"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "reg-name-error" : undefined}
+                {...register("name")}
+              />
+              {errors.name && (
+                <p id="reg-name-error" role="alert" className="text-xs text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="nome@esempio.it" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-email">Email</Label>
+              <Input
+                id="reg-email"
+                type="email"
+                autoComplete="email"
+                placeholder="nome@esempio.it"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "reg-email-error" : undefined}
+                {...register("email")}
+              />
+              {errors.email && (
+                <p id="reg-email-error" role="alert" className="text-xs text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-password">Password</Label>
+              <Input
+                id="reg-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "reg-password-error" : undefined}
+                {...register("password")}
+              />
+              {errors.password && (
+                <p id="reg-password-error" role="alert" className="text-xs text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Conferma password</Label>
-              <Input id="confirmPassword" type="password" placeholder="••••••••" {...register("confirmPassword")} />
-              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="reg-confirm">Conferma password</Label>
+              <Input
+                id="reg-confirm"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                aria-invalid={!!errors.confirmPassword}
+                aria-describedby={errors.confirmPassword ? "reg-confirm-error" : undefined}
+                {...register("confirmPassword")}
+              />
+              {errors.confirmPassword && (
+                <p id="reg-confirm-error" role="alert" className="text-xs text-destructive">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
             </div>
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+              <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
                 {error}
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full gap-2" disabled={loading}>
               {loading && <Loader2 className="animate-spin" size={16} />}
-              {loading ? "Creazione in corso..." : "Crea account"}
+              {loading ? "Creazione in corso…" : "Crea account"}
             </Button>
           </form>
         </div>
