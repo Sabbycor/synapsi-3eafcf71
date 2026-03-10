@@ -81,9 +81,11 @@ export default function ForgotPasswordPage() {
                   id="forgot-email"
                   type="email"
                   autoComplete="email"
+                  autoFocus
                   placeholder="nome@esempio.it"
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? "forgot-email-error" : undefined}
+                  disabled={loading}
                   {...register("email")}
                 />
                 {errors.email && (
