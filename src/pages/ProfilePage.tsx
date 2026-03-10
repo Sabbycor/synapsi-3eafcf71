@@ -97,8 +97,12 @@ export default function ProfilePage() {
   };
 
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login", { replace: true });
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch {
+      toast({ title: "Errore", description: "Impossibile effettuare il logout. Riprova.", variant: "destructive" });
+    }
   };
 
   if (loading) {
