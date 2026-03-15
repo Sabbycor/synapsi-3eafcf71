@@ -255,9 +255,9 @@ export default function CalendarPage() {
 
         {/* Date nav */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ChevronLeft size={16} /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)}><ChevronLeft size={16} /></Button>
           <span className="font-display font-semibold text-foreground text-sm capitalize">{dateLabel}</span>
-          <Button variant="ghost" size="icon" onClick={() => navigate(1)}><ChevronRight size={16} /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(1)}><ChevronRight size={16} /></Button>
         </div>
 
         {/* Week strip */}
