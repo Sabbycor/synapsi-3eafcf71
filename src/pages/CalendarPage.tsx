@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
 import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -82,6 +83,7 @@ interface PatientOption {
 
 export default function CalendarPage() {
   const practiceProfileId = usePracticeProfileId();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const today = new Date().toISOString().slice(0, 10);
@@ -171,7 +173,7 @@ export default function CalendarPage() {
     return list;
   }, [appointments, selectedDate, view, statusFilter, weekDates]);
 
-  const navigate = (dir: number) => {
+  const navigateDate = (dir: number) => {
     const d = parseLocalDate(selectedDate);
     if (view === "day") d.setDate(d.getDate() + dir);
     else if (view === "week") d.setDate(d.getDate() + dir * 7);
@@ -253,9 +255,9 @@ export default function CalendarPage() {
 
         {/* Date nav */}
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ChevronLeft size={16} /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)}><ChevronLeft size={16} /></Button>
           <span className="font-display font-semibold text-foreground text-sm capitalize">{dateLabel}</span>
-          <Button variant="ghost" size="icon" onClick={() => navigate(1)}><ChevronRight size={16} /></Button>
+          <Button variant="ghost" size="icon" onClick={() => navigateDate(1)}><ChevronRight size={16} /></Button>
         </div>
 
         {/* Week strip */}
@@ -352,6 +354,16 @@ export default function CalendarPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{a.location_type === "online" ? "Online" : "In studio"}</p>
                   {view !== "day" && <p className="text-xs text-muted-foreground mt-0.5">{getDateFromAppt(a)}</p>}
+                  {a.status !== "completed" && a.status !== "cancelled" && a.status !== "no_show" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1.5 h-7 text-xs text-primary px-2"
+                      onClick={() => navigate(`/appointments/${a.id}/close`)}
+                    >
+                      Segna come completato
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
