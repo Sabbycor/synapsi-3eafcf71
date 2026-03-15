@@ -354,6 +354,16 @@ export default function CalendarPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{a.location_type === "online" ? "Online" : "In studio"}</p>
                   {view !== "day" && <p className="text-xs text-muted-foreground mt-0.5">{getDateFromAppt(a)}</p>}
+                  {a.status !== "completed" && a.status !== "cancelled" && a.status !== "no_show" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1.5 h-7 text-xs text-primary px-2"
+                      onClick={() => navigate(`/appointments/${a.id}/close`)}
+                    >
+                      Segna come completato
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
