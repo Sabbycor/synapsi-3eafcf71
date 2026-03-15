@@ -83,6 +83,7 @@ interface PatientOption {
 
 export default function CalendarPage() {
   const practiceProfileId = usePracticeProfileId();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const today = new Date().toISOString().slice(0, 10);
