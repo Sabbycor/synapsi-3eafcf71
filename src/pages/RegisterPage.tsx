@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Multi-practitioner: not in MVP scope — no role selector at signup; role locked to solo practitioner.
 const schema = z.object({
   name: z.string()
     .transform((v) => v.trim())

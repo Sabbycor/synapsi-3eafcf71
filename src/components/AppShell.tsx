@@ -1,3 +1,4 @@
+// Multi-practitioner: not in MVP scope — no practice switcher UI; single profile loaded via PracticeProfileProvider.
 import { Outlet } from "react-router-dom";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";

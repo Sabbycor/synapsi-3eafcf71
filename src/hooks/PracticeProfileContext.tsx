@@ -1,3 +1,4 @@
+// Multi-practitioner: not in MVP scope — context provides the single practiceProfileId.
 import { createContext, useContext, ReactNode } from "react";
 import { usePracticeProfile } from "./usePracticeProfile";
 import { Loader2 } from "lucide-react";
