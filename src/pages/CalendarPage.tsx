@@ -173,7 +173,7 @@ export default function CalendarPage() {
     return list;
   }, [appointments, selectedDate, view, statusFilter, weekDates]);
 
-  const navigate = (dir: number) => {
+  const navigateDate = (dir: number) => {
     const d = parseLocalDate(selectedDate);
     if (view === "day") d.setDate(d.getDate() + dir);
     else if (view === "week") d.setDate(d.getDate() + dir * 7);
