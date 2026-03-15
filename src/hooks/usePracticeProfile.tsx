@@ -1,3 +1,4 @@
+// Multi-practitioner: not in MVP scope — each user has exactly one practice_profile (UNIQUE constraint on user_id).
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,7 +30,7 @@ export function usePracticeProfile() {
       setError(null);
 
       try {
-        // 1. Try to fetch existing profile
+        // 1. Try to fetch the single profile for this user
         const { data: existing, error: fetchErr } = await supabase
           .from("practice_profiles")
           .select("id, user_id, practice_name, professional_name")
@@ -43,14 +44,17 @@ export function usePracticeProfile() {
           return;
         }
 
-        // 2. None found — create one
+        // 2. None found — create the one-and-only profile (UNIQUE on user_id prevents duplicates)
         const { data: created, error: insertErr } = await supabase
           .from("practice_profiles")
-          .insert({
-            user_id: user!.id,
-            practice_name: "Il mio studio",
-            professional_name: user!.user_metadata?.full_name || "",
-          })
+          .upsert(
+            {
+              user_id: user!.id,
+              practice_name: "Il mio studio",
+              professional_name: user!.user_metadata?.full_name || "",
+            },
+            { onConflict: "user_id" }
+          )
           .select("id, user_id, practice_name, professional_name")
           .single();
 

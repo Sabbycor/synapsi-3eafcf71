@@ -10,6 +10,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
+// Multi-practitioner: not in MVP scope — no practice selector at login; single profile auto-resolved.
 const schema = z.object({
   email: z.string().min(1, "L'email è obbligatoria").email("Inserisci un indirizzo email valido"),
   password: z.string().min(1, "La password è obbligatoria").min(6, "La password deve avere almeno 6 caratteri"),
