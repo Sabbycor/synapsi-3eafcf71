@@ -329,6 +329,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number | null
+          bank_reference: string | null
           created_at: string | null
           id: string
           invoice_id: string
@@ -337,10 +338,12 @@ export type Database = {
           patient_id: string
           payment_date: string | null
           status: string | null
+          transaction_id: string | null
           updated_at: string | null
         }
         Insert: {
           amount?: number | null
+          bank_reference?: string | null
           created_at?: string | null
           id?: string
           invoice_id: string
@@ -349,10 +352,12 @@ export type Database = {
           patient_id: string
           payment_date?: string | null
           status?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Update: {
           amount?: number | null
+          bank_reference?: string | null
           created_at?: string | null
           id?: string
           invoice_id?: string
@@ -361,6 +366,7 @@ export type Database = {
           patient_id?: string
           payment_date?: string | null
           status?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
