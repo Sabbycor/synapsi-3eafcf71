@@ -185,7 +185,7 @@ export default function CalendarPage() {
     if (view === "day") d.setDate(d.getDate() + dir);
     else if (view === "week") d.setDate(d.getDate() + dir * 7);
     else d.setMonth(d.getMonth() + dir);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(formatLocalDate(d));
   };
 
   const dateLabel = (() => {
