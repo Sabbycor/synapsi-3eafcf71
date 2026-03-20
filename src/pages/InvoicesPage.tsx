@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { Plus, Search, FileText, Download, ChevronRight, Send, CreditCard, Trash2 } from "lucide-react";
+import { Plus, Search, FileText, ChevronRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
@@ -29,7 +29,9 @@ interface InvoiceRow {
   subtotal: number | null;
   total_amount: number | null;
   status: string | null;
+  service_record_id: string | null;
   patient_name: string;
+  service_date: string | null;
 }
 
 interface PaymentRow {
@@ -62,7 +64,7 @@ export default function InvoicesPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, invoice_number, patient_id, issue_date, due_date, subtotal, total_amount, status, patients(first_name, last_name)")
+      .select("id, invoice_number, patient_id, issue_date, due_date, subtotal, total_amount, status, service_record_id, patients(first_name, last_name), service_records(service_date)")
       .eq("practice_profile_id", practiceProfileId)
       .order("issue_date", { ascending: false });
     if (error) { console.error(error); toast.error("Errore caricamento fatture"); }
@@ -70,6 +72,7 @@ export default function InvoicesPage() {
       setInvoices((data || []).map((i: any) => ({
         ...i,
         patient_name: i.patients ? `${i.patients.first_name} ${i.patients.last_name}` : "Sconosciuto",
+        service_date: i.service_records?.service_date || null,
       })));
     }
     setLoading(false);
@@ -106,12 +109,11 @@ export default function InvoicesPage() {
     draft: invoices.filter(i => i.status === "draft").length,
   }), [invoices]);
 
-  const paidAmount = invoicePayments.filter(p => true).reduce((s, p) => s + (p.amount || 0), 0);
+  const paidAmount = invoicePayments.reduce((s, p) => s + (p.amount || 0), 0);
 
   const handleCreate = async () => {
     if (!newPatientId || !newAmount || !practiceProfileId) return;
     setSaving(true);
-    // Get next invoice number
     const { data: pp } = await supabase.from("practice_profiles").select("invoice_prefix, invoice_next_number").eq("id", practiceProfileId).maybeSingle();
     const prefix = pp?.invoice_prefix || "SYN";
     const nextNum = pp?.invoice_next_number || 1;
@@ -129,7 +131,6 @@ export default function InvoicesPage() {
       status: "draft",
     });
     if (!error) {
-      // Increment next number
       await supabase.from("practice_profiles").update({ invoice_next_number: nextNum + 1 }).eq("id", practiceProfileId);
       toast.success(`Fattura ${invoiceNumber} creata`);
       setCreateDrawerOpen(false);
@@ -217,7 +218,10 @@ export default function InvoicesPage() {
                     <InvoiceStatusBadge status={(inv.status as InvoiceStatus) || "draft"} />
                   </div>
                   <p className="text-xs text-muted-foreground truncate">{inv.patient_name} · €{inv.total_amount || 0}</p>
-                  <p className="text-xs text-muted-foreground">{inv.issue_date || "—"}{inv.due_date ? ` · Scad. ${inv.due_date}` : ""}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {inv.issue_date || "—"}{inv.due_date ? ` · Scad. ${inv.due_date}` : ""}
+                    {inv.service_date ? ` · Seduta ${inv.service_date}` : ""}
+                  </p>
                 </div>
                 <ChevronRight size={16} className="text-muted-foreground shrink-0" />
               </button>
@@ -248,6 +252,12 @@ export default function InvoicesPage() {
                   <span className="text-muted-foreground">Scadenza</span>
                   <span className="text-foreground">{selectedInvoice.due_date || "—"}</span>
                 </div>
+                {selectedInvoice.service_date && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Data seduta</span>
+                    <span className="text-foreground">{selectedInvoice.service_date}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Importo</span>
                   <span className="font-medium text-foreground">€{selectedInvoice.total_amount || 0}</span>
