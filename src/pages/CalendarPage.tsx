@@ -59,7 +59,7 @@ function getMonthDates(year: number, month: number) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(year, month, i);
-    result.push({ date: d.toISOString().slice(0, 10), dayNum: i, isCurrentMonth: true });
+    result.push({ date: formatLocalDate(d), dayNum: i, isCurrentMonth: true });
   }
   const remaining = 7 - (result.length % 7);
   if (remaining < 7) {
