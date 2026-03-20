@@ -15,7 +15,7 @@ import {
 import { Plus, CreditCard, Search, TrendingUp, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { usePracticeProfile } from "@/hooks/usePracticeProfile";
+import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 type MethodFilter = PaymentMethod | "all";
