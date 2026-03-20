@@ -44,7 +44,7 @@ function getWeekDates(baseDate: string) {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(monday);
     dd.setDate(monday.getDate() + i);
-    return { date: dd.toISOString().slice(0, 10), dayLabel: DAYS_SHORT[i], dayNum: dd.getDate() };
+    return { date: formatLocalDate(dd), dayLabel: DAYS_SHORT[i], dayNum: dd.getDate() };
   });
 }
 
