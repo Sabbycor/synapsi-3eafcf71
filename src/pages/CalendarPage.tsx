@@ -29,6 +29,13 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function getWeekDates(baseDate: string) {
   const d = parseLocalDate(baseDate);
   const dayOfWeek = d.getDay() === 0 ? 6 : d.getDay() - 1;
@@ -37,7 +44,7 @@ function getWeekDates(baseDate: string) {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(monday);
     dd.setDate(monday.getDate() + i);
-    return { date: dd.toISOString().slice(0, 10), dayLabel: DAYS_SHORT[i], dayNum: dd.getDate() };
+    return { date: formatLocalDate(dd), dayLabel: DAYS_SHORT[i], dayNum: dd.getDate() };
   });
 }
 
@@ -47,18 +54,18 @@ function getMonthDates(year: number, month: number) {
   const result: { date: string; dayNum: number; isCurrentMonth: boolean }[] = [];
   for (let i = startWeekday - 1; i >= 0; i--) {
     const d = new Date(year, month, -i);
-    result.push({ date: d.toISOString().slice(0, 10), dayNum: d.getDate(), isCurrentMonth: false });
+    result.push({ date: formatLocalDate(d), dayNum: d.getDate(), isCurrentMonth: false });
   }
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(year, month, i);
-    result.push({ date: d.toISOString().slice(0, 10), dayNum: i, isCurrentMonth: true });
+    result.push({ date: formatLocalDate(d), dayNum: i, isCurrentMonth: true });
   }
   const remaining = 7 - (result.length % 7);
   if (remaining < 7) {
     for (let i = 1; i <= remaining; i++) {
       const d = new Date(year, month + 1, i);
-      result.push({ date: d.toISOString().slice(0, 10), dayNum: i, isCurrentMonth: false });
+      result.push({ date: formatLocalDate(d), dayNum: i, isCurrentMonth: false });
     }
   }
   return result;
@@ -178,7 +185,7 @@ export default function CalendarPage() {
     if (view === "day") d.setDate(d.getDate() + dir);
     else if (view === "week") d.setDate(d.getDate() + dir * 7);
     else d.setMonth(d.getMonth() + dir);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(formatLocalDate(d));
   };
 
   const dateLabel = (() => {
@@ -198,9 +205,12 @@ export default function CalendarPage() {
     }
     setCreating(true);
     const startsAt = `${newDate}T${newTime}:00`;
-    const endDate = new Date(`${newDate}T${newTime}:00`);
-    endDate.setMinutes(endDate.getMinutes() + 50);
-    const endsAt = endDate.toISOString();
+    // Calculate end time without Date object to avoid UTC conversion issues
+    const [h, m] = newTime.split(":").map(Number);
+    const totalMin = h * 60 + m + 50;
+    const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, "0");
+    const endM = String(totalMin % 60).padStart(2, "0");
+    const endsAt = `${newDate}T${endH}:${endM}:00`;
 
     const { data, error } = await supabase.from("appointments").insert({
       practice_profile_id: practiceProfileId,

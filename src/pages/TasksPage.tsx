@@ -16,7 +16,7 @@ import {
 import { ListTodo, Check, Circle, Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { usePracticeProfile } from "@/hooks/usePracticeProfile";
+import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 type TaskPriority = "high" | "medium" | "low";
@@ -39,7 +39,7 @@ interface TaskRow {
 }
 
 export default function TasksPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");

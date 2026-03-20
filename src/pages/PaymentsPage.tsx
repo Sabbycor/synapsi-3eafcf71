@@ -15,7 +15,7 @@ import {
 import { Plus, CreditCard, Search, TrendingUp, AlertTriangle, Clock, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { usePracticeProfile } from "@/hooks/usePracticeProfile";
+import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 type MethodFilter = PaymentMethod | "all";
@@ -43,7 +43,7 @@ interface InvoiceOption {
 }
 
 export default function PaymentsPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOption[]>([]);
   const [search, setSearch] = useState("");

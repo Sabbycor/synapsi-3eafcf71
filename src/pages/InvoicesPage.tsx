@@ -15,7 +15,7 @@ import {
 import { Plus, Search, FileText, Download, ChevronRight, Send, CreditCard, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { usePracticeProfile } from "@/hooks/usePracticeProfile";
+import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 const STATUS_FILTERS: (InvoiceStatus | "all")[] = ["all", "draft", "issued", "sent", "paid", "partially_paid", "overdue", "cancelled"];
@@ -40,7 +40,7 @@ interface PaymentRow {
 }
 
 export default function InvoicesPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
