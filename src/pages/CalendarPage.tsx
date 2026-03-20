@@ -8,6 +8,7 @@ import { AppointmentStatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
@@ -16,6 +17,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { appointmentStatusLabels, type AppointmentStatus } from "@/components/StatusBadge";
+import {
+  completeAppointmentCascade,
+  noShowAppointment,
+  cancelAppointment,
+  confirmAppointment,
+} from "@/lib/appointmentCascade";
 import { Plus, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +81,7 @@ function getMonthDates(year: number, month: number) {
 interface DbAppointment {
   id: string;
   patient_id: string;
+  practice_profile_id: string;
   starts_at: string;
   ends_at: string;
   status: string | null;
@@ -93,7 +101,7 @@ export default function CalendarPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = formatLocalDate(new Date());
   const [selectedDate, setSelectedDate] = useState(today);
   const [view, setView] = useState<ViewMode>("day");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">("all");
@@ -102,6 +110,12 @@ export default function CalendarPage() {
   const [appointments, setAppointments] = useState<DbAppointment[]>([]);
   const [patientsList, setPatientsList] = useState<PatientOption[]>([]);
   const [creating, setCreating] = useState(false);
+
+  // Status action state
+  const [actionDrawerOpen, setActionDrawerOpen] = useState(false);
+  const [actionAppt, setActionAppt] = useState<DbAppointment | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   // New appointment form state
   const [newPatientId, setNewPatientId] = useState("");
@@ -113,7 +127,7 @@ export default function CalendarPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from("appointments")
-      .select("id, patient_id, starts_at, ends_at, status, location_type, cancellation_reason, patients(first_name, last_name)")
+      .select("id, patient_id, practice_profile_id, starts_at, ends_at, status, location_type, cancellation_reason, patients(first_name, last_name)")
       .eq("practice_profile_id", practiceProfileId)
       .order("starts_at", { ascending: true });
 
@@ -135,7 +149,6 @@ export default function CalendarPage() {
 
     if (error) {
       console.error("[Calendar] patients fetch error:", error);
-      toast({ title: "Errore caricamento pazienti", description: error.message, variant: "destructive" });
     }
     setPatientsList(data ?? []);
   }, [practiceProfileId]);
@@ -145,7 +158,6 @@ export default function CalendarPage() {
     fetchPatients();
   }, [fetchAppointments, fetchPatients]);
 
-  // Helpers
   const getDateFromAppt = (a: DbAppointment) => a.starts_at.slice(0, 10);
   const getTimeFromAppt = (a: DbAppointment) => a.starts_at.slice(11, 16);
   const getEndTimeFromAppt = (a: DbAppointment) => a.ends_at.slice(11, 16);
@@ -205,23 +217,20 @@ export default function CalendarPage() {
     }
     setCreating(true);
     const startsAt = `${newDate}T${newTime}:00`;
-    // Calculate end time without Date object to avoid UTC conversion issues
     const [h, m] = newTime.split(":").map(Number);
     const totalMin = h * 60 + m + 50;
     const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, "0");
     const endM = String(totalMin % 60).padStart(2, "0");
     const endsAt = `${newDate}T${endH}:${endM}:00`;
 
-    const { data, error } = await supabase.from("appointments").insert({
+    const { error } = await supabase.from("appointments").insert({
       practice_profile_id: practiceProfileId,
       patient_id: newPatientId,
       starts_at: startsAt,
       ends_at: endsAt,
       status: "scheduled",
       location_type: "in_person",
-    }).select();
-
-    console.log("[Calendar] create appointment response:", { data, error });
+    });
 
     if (error) {
       toast({ title: "Errore creazione appuntamento", description: error.message, variant: "destructive" });
@@ -233,6 +242,41 @@ export default function CalendarPage() {
     }
     setCreating(false);
   };
+
+  // Status action handlers
+  const openActionDrawer = (appt: DbAppointment) => {
+    setActionAppt(appt);
+    setCancelReason("");
+    setActionDrawerOpen(true);
+  };
+
+  const handleStatusAction = async (action: "confirmed" | "completed" | "cancelled" | "no_show") => {
+    if (!actionAppt) return;
+    setActionLoading(true);
+    try {
+      if (action === "confirmed") {
+        await confirmAppointment(actionAppt.id);
+        toast({ title: "Appuntamento confermato" });
+      } else if (action === "completed") {
+        const result = await completeAppointmentCascade(actionAppt);
+        toast({ title: "Seduta completata", description: `Fattura ${result.invoiceNumber} creata in bozza` });
+      } else if (action === "no_show") {
+        await noShowAppointment(actionAppt);
+        toast({ title: "Segnato come assente" });
+      } else if (action === "cancelled") {
+        await cancelAppointment(actionAppt, cancelReason);
+        toast({ title: "Appuntamento annullato" });
+      }
+      setActionDrawerOpen(false);
+      fetchAppointments();
+    } catch (err: any) {
+      toast({ title: "Errore", description: err.message, variant: "destructive" });
+    }
+    setActionLoading(false);
+  };
+
+  const isActionable = (status: string | null) =>
+    !status || status === "scheduled" || status === "confirmed";
 
   return (
     <PageContainer>
@@ -364,14 +408,14 @@ export default function CalendarPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">{a.location_type === "online" ? "Online" : "In studio"}</p>
                   {view !== "day" && <p className="text-xs text-muted-foreground mt-0.5">{getDateFromAppt(a)}</p>}
-                  {a.status !== "completed" && a.status !== "cancelled" && a.status !== "no_show" && (
+                  {isActionable(a.status) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="mt-1.5 h-7 text-xs text-primary px-2"
-                      onClick={() => navigate(`/appointments/${a.id}/close`)}
+                      onClick={() => openActionDrawer(a)}
                     >
-                      Segna come completato
+                      Gestisci stato
                     </Button>
                   )}
                 </div>
@@ -380,6 +424,49 @@ export default function CalendarPage() {
           </div>
         )}
       </div>
+
+      {/* Status Action Drawer */}
+      <Drawer open={actionDrawerOpen} onOpenChange={setActionDrawerOpen}>
+        {actionAppt && (
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Gestisci appuntamento</DrawerTitle>
+              <DrawerDescription>{getPatientNameFromAppt(actionAppt)} — {getDateFromAppt(actionAppt)} {getTimeFromAppt(actionAppt)}</DrawerDescription>
+            </DrawerHeader>
+            <div className="px-4 space-y-3 pb-2">
+              {actionAppt.status === "scheduled" && (
+                <Button className="w-full" variant="outline" disabled={actionLoading} onClick={() => handleStatusAction("confirmed")}>
+                  ✓ Conferma appuntamento
+                </Button>
+              )}
+              <Button className="w-full" disabled={actionLoading} onClick={() => handleStatusAction("completed")}>
+                ✅ Completa seduta (crea fattura)
+              </Button>
+              <Button className="w-full" variant="outline" disabled={actionLoading} onClick={() => handleStatusAction("no_show")}>
+                🚫 Paziente assente (no fattura)
+              </Button>
+              <div className="space-y-2 pt-2 border-t border-border">
+                <Label className="text-xs">Motivo annullamento (opzionale)</Label>
+                <Textarea
+                  value={cancelReason}
+                  onChange={e => setCancelReason(e.target.value)}
+                  placeholder="Es. Richiesta del paziente..."
+                  rows={2}
+                  maxLength={200}
+                />
+                <Button className="w-full" variant="destructive" disabled={actionLoading} onClick={() => handleStatusAction("cancelled")}>
+                  ❌ Annulla appuntamento
+                </Button>
+              </div>
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="ghost" size="sm">Chiudi</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        )}
+      </Drawer>
 
       {/* Create Appointment Drawer */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>

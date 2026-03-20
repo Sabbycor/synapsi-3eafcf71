@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { Plus, CreditCard, Search, TrendingUp, AlertTriangle, Clock, Trash2 } from "lucide-react";
+import { Plus, CreditCard, Search, TrendingUp, Clock, Trash2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
@@ -30,6 +30,8 @@ interface PaymentRow {
   method: string | null;
   status: string | null;
   notes: string | null;
+  transaction_id: string | null;
+  bank_reference: string | null;
   patient_name: string;
   invoice_number: string;
 }
@@ -56,14 +58,15 @@ export default function PaymentsPage() {
   const [newInvoiceId, setNewInvoiceId] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
-  const [newMethod, setNewMethod] = useState<PaymentMethod>("cash");
+  const [newMethod, setNewMethod] = useState<string>("cash");
   const [newNotes, setNewNotes] = useState("");
+  const [newTransactionId, setNewTransactionId] = useState("");
+  const [newBankReference, setNewBankReference] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchPayments = useCallback(async () => {
     if (!practiceProfileId) return;
     setLoading(true);
-    // Payments linked via invoices to this practice
     const { data, error } = await supabase
       .from("payments")
       .select("id, invoice_id, patient_id, payment_date, amount, method, status, notes, patients(first_name, last_name), invoices!inner(practice_profile_id, invoice_number)")
@@ -75,6 +78,8 @@ export default function PaymentsPage() {
         ...p,
         patient_name: p.patients ? `${p.patients.first_name} ${p.patients.last_name}` : "Sconosciuto",
         invoice_number: p.invoices?.invoice_number || "—",
+        transaction_id: p.transaction_id ?? null,
+        bank_reference: p.bank_reference ?? null,
       })));
     }
     setLoading(false);
@@ -82,20 +87,39 @@ export default function PaymentsPage() {
 
   useEffect(() => { fetchPayments(); }, [fetchPayments]);
 
-  // Fetch invoices for the create form
-  useEffect(() => {
+  // Fetch unpaid invoices for the create form
+  const fetchInvoiceOptions = useCallback(async () => {
     if (!practiceProfileId) return;
-    supabase.from("invoices")
-      .select("id, invoice_number, patient_id, total_amount, patients(first_name, last_name)")
+    // Get invoices that are draft/issued and don't have a completed payment yet
+    const { data: invoices } = await supabase
+      .from("invoices")
+      .select("id, invoice_number, patient_id, total_amount, status, patients(first_name, last_name)")
       .eq("practice_profile_id", practiceProfileId)
-      .in("status", ["draft", "issued", "sent", "overdue", "partially_paid"])
-      .then(({ data }) => {
-        setInvoiceOptions((data || []).map((i: any) => ({
+      .in("status", ["draft", "issued"]);
+
+    if (!invoices) { setInvoiceOptions([]); return; }
+
+    // Filter out invoices that already have a completed payment
+    const invoiceIds = invoices.map(i => i.id);
+    const { data: completedPayments } = await supabase
+      .from("payments")
+      .select("invoice_id")
+      .in("invoice_id", invoiceIds.length > 0 ? invoiceIds : ["__none__"])
+      .eq("status", "completed");
+
+    const paidInvoiceIds = new Set((completedPayments || []).map(p => p.invoice_id));
+
+    setInvoiceOptions(
+      invoices
+        .filter(i => !paidInvoiceIds.has(i.id))
+        .map((i: any) => ({
           ...i,
           patient_name: i.patients ? `${i.patients.first_name} ${i.patients.last_name}` : "Sconosciuto",
-        })));
-      });
+        }))
+    );
   }, [practiceProfileId]);
+
+  useEffect(() => { fetchInvoiceOptions(); }, [fetchInvoiceOptions]);
 
   const filtered = useMemo(() => {
     let list = [...payments];
@@ -103,7 +127,7 @@ export default function PaymentsPage() {
     if (statusFilter !== "all") list = list.filter(p => p.status === statusFilter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(p => p.patient_name.toLowerCase().includes(q));
+      list = list.filter(p => p.patient_name.toLowerCase().includes(q) || p.invoice_number.toLowerCase().includes(q));
     }
     return list;
   }, [payments, search, methodFilter, statusFilter]);
@@ -115,6 +139,19 @@ export default function PaymentsPage() {
     if (!newInvoiceId || !newAmount || !practiceProfileId) return;
     const inv = invoiceOptions.find(i => i.id === newInvoiceId);
     if (!inv) return;
+
+    // Validate method-specific fields
+    if (newMethod === "card" && !newTransactionId.trim()) {
+      toast.error("Inserisci l'ID transazione per il pagamento con carta");
+      return;
+    }
+    if (newMethod === "bank_transfer" && !newBankReference.trim()) {
+      toast.error("Inserisci il riferimento bonifico");
+      return;
+    }
+
+    const paymentStatus = newMethod === "bank_transfer" ? "pending" : "completed";
+
     setSaving(true);
     const { error } = await supabase.from("payments").insert({
       invoice_id: newInvoiceId,
@@ -122,23 +159,43 @@ export default function PaymentsPage() {
       amount: parseFloat(newAmount),
       payment_date: newDate,
       method: newMethod,
-      status: "completed",
+      status: paymentStatus,
       notes: newNotes.trim() || null,
-    });
-    setSaving(false);
-    if (error) { toast.error("Errore registrazione pagamento"); console.error(error); }
-    else {
-      toast.success("Pagamento registrato");
+      transaction_id: newMethod === "card" ? newTransactionId.trim() : null,
+      bank_reference: newMethod === "bank_transfer" ? newBankReference.trim() : null,
+    } as any);
+
+    if (error) {
+      toast.error("Errore registrazione pagamento");
+      console.error(error);
+    } else {
+      // If payment is completed, update invoice status to 'paid'
+      if (paymentStatus === "completed") {
+        await supabase.from("invoices").update({ status: "paid" }).eq("id", newInvoiceId);
+      }
+      toast.success(paymentStatus === "pending" ? "Pagamento registrato (in attesa conferma)" : "Pagamento registrato");
       setDrawerOpen(false);
-      setNewInvoiceId(""); setNewAmount(""); setNewNotes("");
+      setNewInvoiceId(""); setNewAmount(""); setNewNotes(""); setNewTransactionId(""); setNewBankReference("");
       fetchPayments();
+      fetchInvoiceOptions();
     }
+    setSaving(false);
+  };
+
+  const handleConfirmPayment = async (payment: PaymentRow) => {
+    const { error } = await supabase.from("payments").update({ status: "completed" }).eq("id", payment.id);
+    if (error) { toast.error("Errore conferma"); return; }
+    // Update linked invoice to paid
+    await supabase.from("invoices").update({ status: "paid" }).eq("id", payment.invoice_id);
+    toast.success("Pagamento confermato");
+    fetchPayments();
+    fetchInvoiceOptions();
   };
 
   const handleDelete = async (paymentId: string) => {
     const { error } = await supabase.from("payments").delete().eq("id", paymentId);
     if (error) toast.error("Errore eliminazione");
-    else { toast.success("Pagamento eliminato"); fetchPayments(); }
+    else { toast.success("Pagamento eliminato"); fetchPayments(); fetchInvoiceOptions(); }
   };
 
   return (
@@ -162,9 +219,9 @@ export default function PaymentsPage() {
             <p className="font-display text-lg font-bold text-foreground">€{totalPending}</p>
             <p className="text-[11px] text-muted-foreground">In attesa</p>
           </div>
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
-            <AlertTriangle size={14} className="text-destructive mx-auto mb-1" />
-            <p className="font-display text-lg font-bold text-destructive">{payments.length}</p>
+          <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
+            <CreditCard size={14} className="text-muted-foreground mx-auto mb-1" />
+            <p className="font-display text-lg font-bold text-foreground">{payments.length}</p>
             <p className="text-[11px] text-muted-foreground">Totale</p>
           </div>
         </div>
@@ -225,9 +282,16 @@ export default function PaymentsPage() {
                   <p className="text-xs text-muted-foreground truncate">{p.patient_name} · {paymentMethodLabels[(p.method || "cash") as PaymentMethod] || p.method}</p>
                   <p className="text-xs text-muted-foreground">{p.payment_date || "—"} · Fatt. {p.invoice_number}{p.notes ? ` · ${p.notes}` : ""}</p>
                 </div>
-                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 text-destructive" onClick={() => handleDelete(p.id)}>
-                  <Trash2 size={14} />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {p.status === "pending" && p.method === "bank_transfer" && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => handleConfirmPayment(p)} title="Conferma ricezione">
+                      <CheckCircle2 size={14} />
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(p.id)}>
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -244,10 +308,16 @@ export default function PaymentsPage() {
           <div className="px-4 space-y-4">
             <div className="space-y-2">
               <Label>Fattura *</Label>
-              <Select value={newInvoiceId} onValueChange={setNewInvoiceId}>
+              <Select value={newInvoiceId} onValueChange={v => {
+                setNewInvoiceId(v);
+                const inv = invoiceOptions.find(i => i.id === v);
+                if (inv?.total_amount) setNewAmount(String(inv.total_amount));
+              }}>
                 <SelectTrigger><SelectValue placeholder="Seleziona fattura" /></SelectTrigger>
                 <SelectContent>
-                  {invoiceOptions.map(inv => (
+                  {invoiceOptions.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">Nessuna fattura da pagare</div>
+                  ) : invoiceOptions.map(inv => (
                     <SelectItem key={inv.id} value={inv.id}>{inv.invoice_number} — {inv.patient_name} — €{inv.total_amount}</SelectItem>
                   ))}
                 </SelectContent>
@@ -264,16 +334,29 @@ export default function PaymentsPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Metodo</Label>
-              <Select value={newMethod} onValueChange={v => setNewMethod(v as PaymentMethod)}>
+              <Label>Metodo *</Label>
+              <Select value={newMethod} onValueChange={v => setNewMethod(v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cash">Contanti</SelectItem>
-                  <SelectItem value="card">Carta</SelectItem>
+                  <SelectItem value="card">Carta / POS</SelectItem>
                   <SelectItem value="bank_transfer">Bonifico</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {newMethod === "card" && (
+              <div className="space-y-2">
+                <Label>ID Transazione *</Label>
+                <Input value={newTransactionId} onChange={e => setNewTransactionId(e.target.value)} placeholder="Es. TXN-123456" />
+              </div>
+            )}
+            {newMethod === "bank_transfer" && (
+              <div className="space-y-2">
+                <Label>Riferimento bonifico *</Label>
+                <Input value={newBankReference} onChange={e => setNewBankReference(e.target.value)} placeholder="Es. CRO / TRN" />
+                <p className="text-xs text-muted-foreground">Il pagamento sarà registrato come "in attesa" fino a conferma manuale.</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Note</Label>
               <Input value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="Note opzionali..." />
