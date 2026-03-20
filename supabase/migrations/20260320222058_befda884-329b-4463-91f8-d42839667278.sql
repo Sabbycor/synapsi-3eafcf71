@@ -1,0 +1,1 @@
+UPDATE public.appointments SET ends_at = starts_at + interval '50 minutes' WHERE ends_at < starts_at;
