@@ -16,7 +16,7 @@ import {
 import { ListTodo, Check, Circle, Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { usePracticeProfile } from "@/hooks/usePracticeProfile";
+import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 type TaskPriority = "high" | "medium" | "low";
