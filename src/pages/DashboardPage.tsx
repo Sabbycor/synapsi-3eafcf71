@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import type { AppointmentStatus } from "@/data/mock";
+import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
   CalendarCheck, Receipt, AlertTriangle, Clock, CheckCircle2,
   Plus, ChevronRight, CalendarDays, FileText,

@@ -15,7 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { appointmentStatusLabels, type AppointmentStatus } from "@/data/mock";
+import { appointmentStatusLabels, type AppointmentStatus } from "@/components/StatusBadge";
 import { Plus, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
