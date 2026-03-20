@@ -40,7 +40,7 @@ interface PaymentRow {
 }
 
 export default function InvoicesPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
