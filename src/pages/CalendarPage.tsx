@@ -54,7 +54,7 @@ function getMonthDates(year: number, month: number) {
   const result: { date: string; dayNum: number; isCurrentMonth: boolean }[] = [];
   for (let i = startWeekday - 1; i >= 0; i--) {
     const d = new Date(year, month, -i);
-    result.push({ date: d.toISOString().slice(0, 10), dayNum: d.getDate(), isCurrentMonth: false });
+    result.push({ date: formatLocalDate(d), dayNum: d.getDate(), isCurrentMonth: false });
   }
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   for (let i = 1; i <= daysInMonth; i++) {
