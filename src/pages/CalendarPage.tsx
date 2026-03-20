@@ -205,9 +205,12 @@ export default function CalendarPage() {
     }
     setCreating(true);
     const startsAt = `${newDate}T${newTime}:00`;
-    const endDate = new Date(`${newDate}T${newTime}:00`);
-    endDate.setMinutes(endDate.getMinutes() + 50);
-    const endsAt = endDate.toISOString();
+    // Calculate end time without Date object to avoid UTC conversion issues
+    const [h, m] = newTime.split(":").map(Number);
+    const totalMin = h * 60 + m + 50;
+    const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, "0");
+    const endM = String(totalMin % 60).padStart(2, "0");
+    const endsAt = `${newDate}T${endH}:${endM}:00`;
 
     const { data, error } = await supabase.from("appointments").insert({
       practice_profile_id: practiceProfileId,
