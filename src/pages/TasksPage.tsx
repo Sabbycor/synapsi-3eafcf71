@@ -39,7 +39,7 @@ interface TaskRow {
 }
 
 export default function TasksPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");

@@ -65,7 +65,7 @@ function getMonthDates(year: number, month: number) {
   if (remaining < 7) {
     for (let i = 1; i <= remaining; i++) {
       const d = new Date(year, month + 1, i);
-      result.push({ date: d.toISOString().slice(0, 10), dayNum: i, isCurrentMonth: false });
+      result.push({ date: formatLocalDate(d), dayNum: i, isCurrentMonth: false });
     }
   }
   return result;

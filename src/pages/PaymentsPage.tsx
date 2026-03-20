@@ -43,7 +43,7 @@ interface InvoiceOption {
 }
 
 export default function PaymentsPage() {
-  const { practiceProfileId } = usePracticeProfile();
+  const practiceProfileId = usePracticeProfileId();
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [invoiceOptions, setInvoiceOptions] = useState<InvoiceOption[]>([]);
   const [search, setSearch] = useState("");
