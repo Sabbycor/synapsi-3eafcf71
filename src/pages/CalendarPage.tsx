@@ -29,6 +29,13 @@ function parseLocalDate(dateStr: string): Date {
   return new Date(y, m - 1, d);
 }
 
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function getWeekDates(baseDate: string) {
   const d = parseLocalDate(baseDate);
   const dayOfWeek = d.getDay() === 0 ? 6 : d.getDay() - 1;
