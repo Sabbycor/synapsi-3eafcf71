@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Save, Check, Loader2, User, AlertCircle } from "lucide-react";
+import { LogOut, Save, Check, Loader2, User, AlertCircle, Shield, MessageSquare, Download } from "lucide-react";
+import { SupportInbox } from "@/components/SupportInbox";
+import { ExportDrawer } from "@/components/ExportDrawer";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
@@ -24,6 +26,8 @@ export default function ProfilePage() {
   const [profileMissing, setProfileMissing] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [nameError, setNameError] = useState("");
+  const [supportOpen, setSupportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -186,6 +190,31 @@ export default function ProfilePage() {
           </Button>
         </div>
 
+        {/* Quick links */}
+        <div className="rounded-xl border border-border bg-card shadow-card divide-y divide-border">
+          <button onClick={() => setExportOpen(true)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors">
+            <Download size={16} className="text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Esporta dati</p>
+              <p className="text-xs text-muted-foreground">CSV per commercialista e Sistema TS</p>
+            </div>
+          </button>
+          <button onClick={() => navigate("/audit-log")} className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors">
+            <Shield size={16} className="text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Audit & Log accessi</p>
+              <p className="text-xs text-muted-foreground">Registro operazioni per compliance</p>
+            </div>
+          </button>
+          <button onClick={() => setSupportOpen(true)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors">
+            <MessageSquare size={16} className="text-accent shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">Segnala un problema</p>
+              <p className="text-xs text-muted-foreground">Bug, suggerimenti, feedback</p>
+            </div>
+          </button>
+        </div>
+
         <Button
           variant="outline"
           className="w-full gap-2 text-destructive hover:text-destructive hover:bg-destructive/5"
@@ -195,6 +224,9 @@ export default function ProfilePage() {
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">Synapsi v1.0</p>
+
+        <SupportInbox open={supportOpen} onOpenChange={setSupportOpen} />
+        <ExportDrawer open={exportOpen} onOpenChange={setExportOpen} />
       </div>
     </PageContainer>
   );
