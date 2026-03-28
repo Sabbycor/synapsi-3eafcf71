@@ -92,7 +92,7 @@ export default function PatientsPage() {
               key={f.key}
               onClick={() => setFilter(f.key)}
               className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
+                "shrink-0 rounded-full px-3 py-2 text-xs font-medium transition-colors border min-h-[44px] flex items-center",
                 filter === f.key
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
