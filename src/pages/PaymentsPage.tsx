@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
+import { auditPaymentStatusChanged } from "@/lib/auditLog";
 
 type MethodFilter = PaymentMethod | "all";
 type StatusFilter = PaymentStatus | "all";
