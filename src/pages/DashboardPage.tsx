@@ -145,11 +145,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 md:gap-3">
           {statCards.map(s => (
-            <div key={s.label} className={`rounded-xl border bg-card p-3.5 shadow-card ${s.highlight ? "border-destructive/30" : "border-border"}`}>
+            <div key={s.label} className={`rounded-xl border bg-card p-3 md:p-4 shadow-card ${s.highlight ? "border-destructive/30" : "border-border"}`}>
               <s.icon size={16} className={s.highlight ? "text-destructive" : "text-accent"} />
-              <p className={`font-display text-2xl font-bold mt-1 ${s.highlight ? "text-destructive" : "text-foreground"}`}>{s.value}</p>
+              <p className={`font-display text-xl md:text-2xl font-bold mt-1 ${s.highlight ? "text-destructive" : "text-foreground"}`}>{s.value}</p>
               <p className="text-[11px] text-muted-foreground">{s.label}</p>
             </div>
           ))}
@@ -179,13 +179,13 @@ export default function DashboardPage() {
                     </div>
                     <div className="shrink-0">
                       {(status === "scheduled" || status === "confirmed") && (
-                        <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => navigate(`/appointments/${a.id}/close`)}>Completa</Button>
+                        <Button variant="outline" size="sm" className="text-xs h-9 min-h-[44px]" onClick={() => navigate(`/appointments/${a.id}/close`)}>Completa</Button>
                       )}
                       {status === "completed" && !a.hasServiceRecord && (
-                        <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => navigate(`/appointments/${a.id}/close`)}>Chiudi seduta</Button>
+                        <Button variant="outline" size="sm" className="text-xs h-9 min-h-[44px]" onClick={() => navigate(`/appointments/${a.id}/close`)}>Chiudi seduta</Button>
                       )}
                       {status === "completed" && a.hasServiceRecord && !a.hasInvoice && (
-                        <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => navigate("/invoices")}><FileText size={12} /> Fattura</Button>
+                        <Button variant="outline" size="sm" className="text-xs h-9 min-h-[44px]" onClick={() => navigate("/invoices")}><FileText size={12} /> Fattura</Button>
                       )}
                     </div>
                   </div>
@@ -195,18 +195,19 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* AI Coach — Suggested Actions */}
-        <div>
-          <SectionHeader title="Azioni suggerite" className="mb-3" />
-          <AiCoachChips />
-        </div>
+        {/* Bottom sections: side by side on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* AI Coach — Suggested Actions */}
+          <div>
+            <SectionHeader title="Azioni suggerite" className="mb-3" />
+            <AiCoachChips />
+          </div>
 
-        {/* Monthly Reports */}
-        <div>
-          <SectionHeader title="Report del mese" className="mb-3" />
-          <MonthlyReports />
+          {/* Monthly Reports */}
+          <div>
+            <SectionHeader title="Report del mese" className="mb-3" />
+            <MonthlyReports />
+          </div>
         </div>
-      </div>
-    </PageContainer>
   );
 }
