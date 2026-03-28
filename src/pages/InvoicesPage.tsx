@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { Plus, Search, FileText, ChevronRight, Trash2 } from "lucide-react";
+import { Plus, Search, FileText, ChevronRight, Trash2, Download, Send, CheckCircle2 } from "lucide-react";
+import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
@@ -86,12 +87,69 @@ export default function InvoicesPage() {
       .then(({ data }) => setPatients((data || []).map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }))));
   }, [practiceProfileId]);
 
+  // Practice profile data for PDF
+  const [practiceData, setPracticeData] = useState<any>(null);
+  useEffect(() => {
+    if (!practiceProfileId) return;
+    supabase.from("practice_profiles").select("professional_name, practice_name, vat_number, tax_code").eq("id", practiceProfileId).maybeSingle()
+      .then(({ data }) => setPracticeData(data));
+  }, [practiceProfileId]);
+
   // Fetch payments when invoice selected
   useEffect(() => {
     if (!selectedInvoice) { setInvoicePayments([]); return; }
     supabase.from("payments").select("id, amount, payment_date, method").eq("invoice_id", selectedInvoice.id)
       .then(({ data }) => setInvoicePayments(data || []));
   }, [selectedInvoice]);
+
+  // Generate PDF for an invoice
+  const handleGeneratePdf = async (inv: InvoiceRow) => {
+    // Fetch patient details
+    const { data: patient } = await supabase.from("patients").select("first_name, last_name, tax_code, address, city").eq("id", inv.patient_id).maybeSingle();
+    // Fetch invoice items
+    const { data: items } = await supabase.from("invoice_items").select("description, quantity, unit_amount, total_amount").eq("invoice_id", inv.id);
+
+    downloadInvoicePdf({
+      invoiceNumber: inv.invoice_number || "—",
+      issueDate: inv.issue_date || "—",
+      dueDate: inv.due_date,
+      professionalName: practiceData?.professional_name || "Professionista",
+      practiceName: practiceData?.practice_name,
+      vatNumber: practiceData?.vat_number,
+      taxCode: practiceData?.tax_code,
+      patientName: patient ? `${patient.first_name} ${patient.last_name}` : inv.patient_name,
+      patientTaxCode: patient?.tax_code,
+      patientAddress: patient?.address,
+      patientCity: patient?.city,
+      items: (items && items.length > 0) ? items.map(it => ({
+        description: it.description || "Prestazione",
+        quantity: it.quantity || 1,
+        unitAmount: it.unit_amount || 0,
+        totalAmount: it.total_amount || 0,
+      })) : [{
+        description: "Seduta psicologica",
+        quantity: 1,
+        unitAmount: inv.total_amount || 0,
+        totalAmount: inv.total_amount || 0,
+      }],
+      subtotal: inv.subtotal || inv.total_amount || 0,
+      totalAmount: inv.total_amount || 0,
+      paymentMethod: null,
+    });
+    toast.success("PDF generato");
+  };
+
+  const handleMarkAsPaid = async (invoiceId: string) => {
+    const { error } = await supabase.from("invoices").update({ status: "paid" }).eq("id", invoiceId);
+    if (error) toast.error("Errore");
+    else { toast.success("Fattura segnata come pagata"); fetchInvoices(); setSelectedInvoice(null); }
+  };
+
+  const handleMarkAsSent = async (invoiceId: string) => {
+    const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoiceId);
+    if (error) toast.error("Errore");
+    else { toast.success("Fattura segnata come inviata"); fetchInvoices(); setSelectedInvoice(null); }
+  };
 
   const filtered = useMemo(() => {
     let list = [...invoices];
@@ -298,12 +356,27 @@ export default function InvoicesPage() {
               </div>
             </div>
             <DrawerFooter>
-              <Button variant="destructive" size="sm" onClick={() => handleDelete(selectedInvoice.id)}>
-                <Trash2 size={14} /> Elimina fattura
-              </Button>
-              <DrawerClose asChild>
-                <Button variant="ghost" size="sm">Chiudi</Button>
-              </DrawerClose>
+              <div className="flex flex-col gap-2 w-full">
+                <Button size="sm" onClick={() => handleGeneratePdf(selectedInvoice)}>
+                  <Download size={14} /> Genera PDF
+                </Button>
+                {selectedInvoice.status === "draft" && (
+                  <Button variant="outline" size="sm" onClick={() => handleMarkAsSent(selectedInvoice.id)}>
+                    <Send size={14} /> Segna come inviata
+                  </Button>
+                )}
+                {["draft", "issued", "sent", "overdue"].includes(selectedInvoice.status || "") && (
+                  <Button variant="outline" size="sm" onClick={() => handleMarkAsPaid(selectedInvoice.id)}>
+                    <CheckCircle2 size={14} /> Segna come pagata
+                  </Button>
+                )}
+                <Button variant="destructive" size="sm" onClick={() => handleDelete(selectedInvoice.id)}>
+                  <Trash2 size={14} /> Elimina fattura
+                </Button>
+                <DrawerClose asChild>
+                  <Button variant="ghost" size="sm">Chiudi</Button>
+                </DrawerClose>
+              </div>
             </DrawerFooter>
           </DrawerContent>
         )}

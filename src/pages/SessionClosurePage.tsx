@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Clock, CheckCircle2, FileText, CalendarDays } from "lucide-react";
+import { ArrowLeft, Loader2, Clock, CheckCircle2, FileText, CalendarDays, Download } from "lucide-react";
+import { completeAppointmentCascade } from "@/lib/appointmentCascade";
+import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 
 const SERVICE_TYPES = [
   { value: "Colloquio individuale", label: "Colloquio individuale" },
@@ -131,48 +133,66 @@ export default function SessionClosurePage() {
     return Object.keys(newErrors).length === 0;
   }
 
+  const [cascadeResult, setCascadeResult] = useState<{ invoiceId: string; invoiceNumber: string } | null>(null);
+
   async function handleClose() {
     if (!validate() || !appointment) return;
-
     setSubmitting(true);
-    const serviceDate = appointment.starts_at.slice(0, 10);
+    try {
+      // Use cascade: creates service_record + invoice + invoice_items
+      const result = await completeAppointmentCascade({
+        id: appointment.id,
+        patient_id: appointment.patient_id,
+        practice_profile_id: practiceProfileId,
+        starts_at: appointment.starts_at,
+        ends_at: appointment.ends_at,
+      });
 
-    // 1. Create service_record
-    const { error: srErr } = await supabase.from("service_records").insert({
-      appointment_id: appointment.id,
-      patient_id: appointment.patient_id,
-      practice_profile_id: practiceProfileId,
-      service_type: serviceType,
-      service_date: serviceDate,
-      duration_minutes: durationMinutes,
-      amount: parseFloat(amount),
-      admin_notes: adminNotes || null,
-      closed_at: new Date().toISOString(),
+      // Update service_record with user-chosen fields
+      await supabase.from("service_records").update({
+        service_type: serviceType,
+        admin_notes: adminNotes || null,
+        amount: parseFloat(amount),
+      }).eq("id", result.serviceRecordId);
+
+      // Update invoice amount if user changed it
+      const amt = parseFloat(amount);
+      await supabase.from("invoices").update({ total_amount: amt, subtotal: amt }).eq("id", result.invoiceId);
+      await supabase.from("invoice_items").update({ unit_amount: amt, total_amount: amt }).eq("invoice_id", result.invoiceId);
+
+      setCascadeResult({ invoiceId: result.invoiceId, invoiceNumber: result.invoiceNumber });
+      setCompleted(true);
+      toast({ title: "Seduta chiusa", description: `Fattura ${result.invoiceNumber} generata automaticamente` });
+    } catch (err: any) {
+      console.error("[SessionClosure] cascade error:", err);
+      toast({ title: "Errore chiusura seduta", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDownloadPdf() {
+    if (!cascadeResult || !appointment) return;
+    const { data: patient } = await supabase.from("patients").select("first_name, last_name, tax_code, address, city").eq("id", appointment.patient_id).maybeSingle();
+    const { data: pp } = await supabase.from("practice_profiles").select("professional_name, practice_name, vat_number, tax_code").eq("id", practiceProfileId).maybeSingle();
+    const amt = parseFloat(amount);
+    downloadInvoicePdf({
+      invoiceNumber: cascadeResult.invoiceNumber,
+      issueDate: new Date().toISOString().slice(0, 10),
+      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+      professionalName: pp?.professional_name || "Professionista",
+      practiceName: pp?.practice_name,
+      vatNumber: pp?.vat_number,
+      taxCode: pp?.tax_code,
+      patientName: patient ? `${patient.first_name} ${patient.last_name}` : patientName,
+      patientTaxCode: patient?.tax_code,
+      patientAddress: patient?.address,
+      patientCity: patient?.city,
+      items: [{ description: serviceType || "Seduta psicologica", quantity: 1, unitAmount: amt, totalAmount: amt }],
+      subtotal: amt,
+      totalAmount: amt,
+      paymentMethod: paymentMethod === "cash" ? "Contanti" : paymentMethod === "card" ? "Carta" : paymentMethod === "bank_transfer" ? "Bonifico" : paymentMethod,
     });
-
-    if (srErr) {
-      console.error("[SessionClosure] service_record insert error:", srErr);
-      toast({ title: "Errore creazione registro seduta", description: srErr.message, variant: "destructive" });
-      setSubmitting(false);
-      return;
-    }
-
-    // 2. Update appointment status to completed
-    const { error: updateErr } = await supabase
-      .from("appointments")
-      .update({ status: "completed" })
-      .eq("id", appointment.id);
-
-    if (updateErr) {
-      console.error("[SessionClosure] appointment update error:", updateErr);
-      toast({ title: "Errore aggiornamento appuntamento", description: updateErr.message, variant: "destructive" });
-      setSubmitting(false);
-      return;
-    }
-
-    setSubmitting(false);
-    setCompleted(true);
-    toast({ title: "Seduta chiusa", description: "Vuoi generare la fattura?" });
   }
 
   // Loading state
@@ -214,10 +234,13 @@ export default function SessionClosurePage() {
             La seduta con {patientName} è stata registrata correttamente. Vuoi generare la fattura?
           </p>
           <div className="flex flex-col gap-2 w-full max-w-[320px] pt-4">
-            <Button onClick={() => toast({ title: "Prossimamente", description: "La generazione fattura sarà disponibile nel prossimo aggiornamento." })}>
-              <FileText size={14} /> Genera fattura
+            <Button onClick={handleDownloadPdf}>
+              <Download size={14} /> Scarica PDF fattura
             </Button>
-            <Button variant="outline" onClick={() => navigate("/dashboard")}>
+            <Button variant="outline" onClick={() => navigate("/invoices")}>
+              <FileText size={14} /> Vai alle fatture
+            </Button>
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
               <CalendarDays size={14} /> Fai dopo
             </Button>
           </div>
