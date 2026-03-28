@@ -9,8 +9,8 @@ interface PageContainerProps {
 export const PageContainer = React.forwardRef<HTMLElement, PageContainerProps>(
   ({ children, className }, ref) => {
     return (
-      <main ref={ref} className={cn("min-h-screen pb-20 md:pb-6", className)}>
-        <div className="container max-w-xl mx-auto px-4 py-6 md:max-w-4xl">
+      <main ref={ref} className={cn("min-h-screen pb-24 md:pb-8", className)}>
+        <div className="w-full max-w-xl mx-auto px-4 py-5 md:max-w-4xl lg:max-w-5xl md:px-6 md:py-6">
           {children}
         </div>
       </main>
