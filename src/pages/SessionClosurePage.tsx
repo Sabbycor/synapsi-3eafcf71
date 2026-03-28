@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Clock, CheckCircle2, FileText, CalendarDays, Download } from "lucide-react";
 import { completeAppointmentCascade } from "@/lib/appointmentCascade";
 import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
+import { auditSessionClosed } from "@/lib/auditLog";
+import { MicroFeedback } from "@/components/MicroFeedback";
 
 const SERVICE_TYPES = [
   { value: "Colloquio individuale", label: "Colloquio individuale" },
@@ -52,6 +54,7 @@ export default function SessionClosurePage() {
   const [submitting, setSubmitting] = useState(false);
   const [appointment, setAppointment] = useState<AppointmentData | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Form state
   const [amount, setAmount] = useState("");
@@ -162,6 +165,8 @@ export default function SessionClosurePage() {
 
       setCascadeResult({ invoiceId: result.invoiceId, invoiceNumber: result.invoiceNumber });
       setCompleted(true);
+      setShowFeedback(true);
+      await auditSessionClosed(appointment.id, result.invoiceNumber);
       toast({ title: "Seduta chiusa", description: `Fattura ${result.invoiceNumber} generata automaticamente` });
     } catch (err: any) {
       console.error("[SessionClosure] cascade error:", err);
@@ -244,6 +249,7 @@ export default function SessionClosurePage() {
               <CalendarDays size={14} /> Fai dopo
             </Button>
           </div>
+          {showFeedback && <MicroFeedback contextAction="session_closure" onDismiss={() => setShowFeedback(false)} />}
         </div>
       </PageContainer>
     );

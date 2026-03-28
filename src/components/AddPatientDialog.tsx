@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { auditPatientCreated } from "@/lib/auditLog";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -71,6 +72,7 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
       return;
     }
 
+    if (data?.[0]) await auditPatientCreated(data[0].id, `${form.first_name} ${form.last_name}`);
     toast({ title: "Paziente aggiunto", description: `${form.first_name} ${form.last_name} è stato creato.` });
     setForm(initialForm);
     onOpenChange(false);

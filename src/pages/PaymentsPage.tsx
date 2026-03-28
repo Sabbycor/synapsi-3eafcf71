@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
+import { auditPaymentStatusChanged } from "@/lib/auditLog";
 
 type MethodFilter = PaymentMethod | "all";
 type StatusFilter = PaymentStatus | "all";
@@ -185,8 +186,8 @@ export default function PaymentsPage() {
   const handleConfirmPayment = async (payment: PaymentRow) => {
     const { error } = await supabase.from("payments").update({ status: "completed" }).eq("id", payment.id);
     if (error) { toast.error("Errore conferma"); return; }
-    // Update linked invoice to paid
     await supabase.from("invoices").update({ status: "paid" }).eq("id", payment.invoice_id);
+    await auditPaymentStatusChanged(payment.id, "pending", "completed");
     toast.success("Pagamento confermato");
     fetchPayments();
     fetchInvoiceOptions();

@@ -109,6 +109,36 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          category: string
+          context_action: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          category: string
+          context_action?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string
+          context_action?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string | null
@@ -438,6 +468,50 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_feedbacks: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          feedback_type: string
+          flow_context: string | null
+          id: string
+          message: string | null
+          practice_profile_id: string | null
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          feedback_type: string
+          flow_context?: string | null
+          id?: string
+          message?: string | null
+          practice_profile_id?: string | null
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          feedback_type?: string
+          flow_context?: string | null
+          id?: string
+          message?: string | null
+          practice_profile_id?: string | null
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_feedbacks_practice_profile_id_fkey"
+            columns: ["practice_profile_id"]
+            isOneToOne: false
+            referencedRelation: "practice_profiles"
             referencedColumns: ["id"]
           },
         ]
