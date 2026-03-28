@@ -209,5 +209,7 @@ export default function DashboardPage() {
             <MonthlyReports />
           </div>
         </div>
+      </div>
+    </PageContainer>
   );
 }
