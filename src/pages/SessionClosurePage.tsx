@@ -165,6 +165,8 @@ export default function SessionClosurePage() {
 
       setCascadeResult({ invoiceId: result.invoiceId, invoiceNumber: result.invoiceNumber });
       setCompleted(true);
+      setShowFeedback(true);
+      await auditSessionClosed(appointment.id, result.invoiceNumber);
       toast({ title: "Seduta chiusa", description: `Fattura ${result.invoiceNumber} generata automaticamente` });
     } catch (err: any) {
       console.error("[SessionClosure] cascade error:", err);
