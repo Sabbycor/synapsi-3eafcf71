@@ -250,6 +250,7 @@ export default function SessionClosurePage() {
           {showFeedback && <MicroFeedback contextAction="session_closure" onDismiss={() => setShowFeedback(false)} />}
         </div>
       </PageContainer>
+    );
   }
 
   // Main form
