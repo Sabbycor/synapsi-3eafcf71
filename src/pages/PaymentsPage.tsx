@@ -238,7 +238,7 @@ export default function PaymentsPage() {
           <div className="flex gap-1.5">
             {(["all", "bank_transfer", "cash", "card"] as MethodFilter[]).map(m => (
               <button key={m} onClick={() => setMethodFilter(m)} className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
+                "shrink-0 rounded-full px-3 py-2 text-[11px] font-medium border transition-colors min-h-[44px] flex items-center",
                 methodFilter === m ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
               )}>
                 {m === "all" ? "Tutti" : paymentMethodLabels[m]}
@@ -249,7 +249,7 @@ export default function PaymentsPage() {
           <div className="flex gap-1.5">
             {(["all", "completed", "pending", "refunded"] as StatusFilter[]).map(s => (
               <button key={s} onClick={() => setStatusFilter(s)} className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
+                "shrink-0 rounded-full px-3 py-2 text-[11px] font-medium border transition-colors min-h-[44px] flex items-center",
                 statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
               )}>
                 {s === "all" ? "Tutti" : paymentStatusLabels[s]}

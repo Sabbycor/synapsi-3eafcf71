@@ -19,10 +19,10 @@ const buttonVariants = cva(
         "hero-outline": "border-2 border-primary text-primary hover:bg-primary/5 font-semibold",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "h-11 px-4 py-2",
+        sm: "h-9 rounded-md px-3 min-h-[44px]",
+        lg: "h-12 rounded-md px-8",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {
