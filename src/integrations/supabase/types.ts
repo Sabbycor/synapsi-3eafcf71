@@ -182,6 +182,7 @@ export type Database = {
       }
       invoices: {
         Row: {
+          billing_month: string | null
           created_at: string | null
           due_date: string | null
           id: string
@@ -198,6 +199,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          billing_month?: string | null
           created_at?: string | null
           due_date?: string | null
           id?: string
@@ -214,6 +216,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          billing_month?: string | null
           created_at?: string | null
           due_date?: string | null
           id?: string
@@ -599,6 +602,7 @@ export type Database = {
           created_at: string | null
           duration_minutes: number | null
           id: string
+          invoice_id: string | null
           patient_id: string
           practice_profile_id: string
           service_date: string | null
@@ -613,6 +617,7 @@ export type Database = {
           created_at?: string | null
           duration_minutes?: number | null
           id?: string
+          invoice_id?: string | null
           patient_id: string
           practice_profile_id: string
           service_date?: string | null
@@ -627,6 +632,7 @@ export type Database = {
           created_at?: string | null
           duration_minutes?: number | null
           id?: string
+          invoice_id?: string | null
           patient_id?: string
           practice_profile_id?: string
           service_date?: string | null
@@ -639,6 +645,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_records_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {
