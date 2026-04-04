@@ -104,8 +104,9 @@ serve(async (req: Request) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("Network error calling Brevo:", err);
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("send-email: network error", { error: errMsg });
     return new Response(
       JSON.stringify({ success: false, error: "Network error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
