@@ -258,8 +258,8 @@ export default function CalendarPage() {
         await confirmAppointment(actionAppt.id);
         toast({ title: "Appuntamento confermato" });
       } else if (action === "completed") {
-        const result = await completeAppointmentCascade(actionAppt);
-        toast({ title: "Seduta completata", description: `Fattura ${result.invoiceNumber} creata in bozza` });
+        await completeAppointmentCascade(actionAppt);
+        toast({ title: "Seduta completata", description: "Servizio registrato. Genera la fattura mensile dalla sezione Fatture." });
       } else if (action === "no_show") {
         await noShowAppointment(actionAppt);
         toast({ title: "Segnato come assente" });

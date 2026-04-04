@@ -47,49 +47,7 @@ export async function completeAppointmentCascade(appt: CascadeAppointment) {
 
   if (srErr) throw new Error(`Errore service_record: ${srErr.message}`);
 
-  // 2. Create invoice
-  const prefix = pp?.invoice_prefix || "SYN";
-  const nextNum = pp?.invoice_next_number || 1;
-  const invoiceNumber = `${prefix}${String(nextNum).padStart(3, "0")}`;
-  const today = new Date().toISOString().slice(0, 10);
-  const dueDate = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-
-  const { data: inv, error: invErr } = await supabase
-    .from("invoices")
-    .insert({
-      service_record_id: sr.id,
-      patient_id: appt.patient_id,
-      practice_profile_id: appt.practice_profile_id,
-      status: "draft",
-      issue_date: today,
-      due_date: dueDate,
-      invoice_number: invoiceNumber,
-      total_amount: amount,
-      subtotal: amount,
-    })
-    .select("id")
-    .single();
-
-  if (invErr) throw new Error(`Errore fattura: ${invErr.message}`);
-
-  // 3. Create invoice_item
-  const { error: iiErr } = await supabase.from("invoice_items").insert({
-    invoice_id: inv.id,
-    description: "Seduta psicologica",
-    quantity: 1,
-    unit_amount: amount,
-    total_amount: amount,
-  });
-
-  if (iiErr) throw new Error(`Errore riga fattura: ${iiErr.message}`);
-
-  // 4. Increment invoice_next_number
-  await supabase
-    .from("practice_profiles")
-    .update({ invoice_next_number: nextNum + 1 })
-    .eq("id", appt.practice_profile_id);
-
-  // 5. Update appointment status
+  // 2. Update appointment status
   const { error: updErr } = await supabase
     .from("appointments")
     .update({ status: "completed" })
@@ -97,7 +55,9 @@ export async function completeAppointmentCascade(appt: CascadeAppointment) {
 
   if (updErr) throw new Error(`Errore aggiornamento appuntamento: ${updErr.message}`);
 
-  return { serviceRecordId: sr.id, invoiceId: inv.id, invoiceNumber };
+  // NOTE: Invoices are no longer created per-session.
+  // Use "Genera fatture mese" in the Invoices page to batch-generate monthly invoices.
+  return { serviceRecordId: sr.id };
 }
 
 /**
