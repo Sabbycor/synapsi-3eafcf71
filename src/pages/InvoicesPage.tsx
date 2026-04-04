@@ -3,16 +3,15 @@ import { PageContainer } from "@/components/PageContainer";
 import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonList } from "@/components/SkeletonCard";
-import { InvoiceStatusBadge, invoiceStatusLabels, paymentMethodLabels } from "@/components/StatusBadge";
+import { InvoiceStatusBadge, invoiceStatusLabels } from "@/components/StatusBadge";
 import type { InvoiceStatus } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { Plus, Search, FileText, ChevronRight, Trash2, Download, Send, CheckCircle2 } from "lucide-react";
+import { Search, FileText, ChevronRight, Download, Send, Loader2, CalendarDays } from "lucide-react";
 import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +19,29 @@ import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
 
 const STATUS_FILTERS: (InvoiceStatus | "all")[] = ["all", "draft", "issued", "sent", "paid", "partially_paid", "overdue", "cancelled"];
+
+const MONTH_LABELS = [
+  "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+  "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
+];
+
+function getMonthOptions() {
+  const options: { value: string; label: string }[] = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`;
+    options.push({ value, label });
+  }
+  return options;
+}
+
+function formatBillingMonth(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr + "T00:00:00");
+  return `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}`;
+}
 
 interface InvoiceRow {
   id: string;
@@ -30,62 +52,32 @@ interface InvoiceRow {
   subtotal: number | null;
   total_amount: number | null;
   status: string | null;
-  service_record_id: string | null;
+  billing_month: string | null;
   patient_name: string;
-  service_date: string | null;
+  service_count: number;
 }
 
-interface PaymentRow {
+interface ServiceRecordRow {
   id: string;
+  service_date: string | null;
+  service_type: string | null;
   amount: number | null;
-  payment_date: string | null;
-  method: string | null;
+  duration_minutes: number | null;
 }
 
 export default function InvoicesPage() {
   const practiceProfileId = usePracticeProfileId();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
-  const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all");
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
-  const [invoicePayments, setInvoicePayments] = useState<PaymentRow[]>([]);
+  const [linkedRecords, setLinkedRecords] = useState<ServiceRecordRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [createDrawerOpen, setCreateDrawerOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
-  // Create form
-  const [newPatientId, setNewPatientId] = useState("");
-  const [newAmount, setNewAmount] = useState("");
-  const [newIssueDate, setNewIssueDate] = useState(new Date().toISOString().slice(0, 10));
-  const [newDueDate, setNewDueDate] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const fetchInvoices = useCallback(async () => {
-    if (!practiceProfileId) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("invoices")
-      .select("id, invoice_number, patient_id, issue_date, due_date, subtotal, total_amount, status, service_record_id, patients(first_name, last_name), service_records(service_date)")
-      .eq("practice_profile_id", practiceProfileId)
-      .order("issue_date", { ascending: false });
-    if (error) { console.error(error); toast.error("Errore caricamento fatture"); }
-    else {
-      setInvoices((data || []).map((i: any) => ({
-        ...i,
-        patient_name: i.patients ? `${i.patients.first_name} ${i.patients.last_name}` : "Sconosciuto",
-        service_date: i.service_records?.service_date || null,
-      })));
-    }
-    setLoading(false);
-  }, [practiceProfileId]);
-
-  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
-
-  useEffect(() => {
-    if (!practiceProfileId) return;
-    supabase.from("patients").select("id, first_name, last_name").eq("practice_profile_id", practiceProfileId)
-      .then(({ data }) => setPatients((data || []).map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }))));
-  }, [practiceProfileId]);
+  const monthOptions = useMemo(() => getMonthOptions(), []);
+  const currentMonth = monthOptions[0].value;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
   // Practice profile data for PDF
   const [practiceData, setPracticeData] = useState<any>(null);
@@ -95,18 +87,101 @@ export default function InvoicesPage() {
       .then(({ data }) => setPracticeData(data));
   }, [practiceProfileId]);
 
-  // Fetch payments when invoice selected
+  const fetchInvoices = useCallback(async () => {
+    if (!practiceProfileId) return;
+    setLoading(true);
+
+    const monthStart = `${selectedMonth}-01`;
+    const nextMonth = new Date(`${selectedMonth}-01T00:00:00Z`);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    const monthEnd = nextMonth.toISOString().slice(0, 10);
+
+    // Fetch invoices for the selected month (by billing_month or issue_date fallback)
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("id, invoice_number, patient_id, issue_date, due_date, subtotal, total_amount, status, billing_month, patients(first_name, last_name)")
+      .eq("practice_profile_id", practiceProfileId)
+      .or(`billing_month.eq.${monthStart},and(billing_month.is.null,issue_date.gte.${monthStart},issue_date.lt.${monthEnd})`)
+      .order("issue_date", { ascending: false });
+
+    if (error) {
+      console.error(error);
+      toast.error("Errore caricamento fatture");
+    } else {
+      // Count linked service_records per invoice
+      const invoiceIds = (data || []).map((i: any) => i.id);
+      let countMap: Record<string, number> = {};
+      if (invoiceIds.length > 0) {
+        const { data: counts } = await supabase
+          .from("service_records")
+          .select("invoice_id")
+          .in("invoice_id", invoiceIds);
+        if (counts) {
+          for (const c of counts) {
+            if (c.invoice_id) countMap[c.invoice_id] = (countMap[c.invoice_id] || 0) + 1;
+          }
+        }
+      }
+
+      setInvoices((data || []).map((i: any) => ({
+        id: i.id,
+        invoice_number: i.invoice_number,
+        patient_id: i.patient_id,
+        issue_date: i.issue_date,
+        due_date: i.due_date,
+        subtotal: i.subtotal,
+        total_amount: i.total_amount,
+        status: i.status,
+        billing_month: i.billing_month,
+        patient_name: i.patients ? `${i.patients.first_name} ${i.patients.last_name}` : "Sconosciuto",
+        service_count: countMap[i.id] || 0,
+      })));
+    }
+    setLoading(false);
+  }, [practiceProfileId, selectedMonth]);
+
+  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+
+  // Fetch linked service_records when invoice selected
   useEffect(() => {
-    if (!selectedInvoice) { setInvoicePayments([]); return; }
-    supabase.from("payments").select("id, amount, payment_date, method").eq("invoice_id", selectedInvoice.id)
-      .then(({ data }) => setInvoicePayments(data || []));
+    if (!selectedInvoice) { setLinkedRecords([]); return; }
+    supabase
+      .from("service_records")
+      .select("id, service_date, service_type, amount, duration_minutes")
+      .eq("invoice_id", selectedInvoice.id)
+      .order("service_date", { ascending: true })
+      .then(({ data }) => setLinkedRecords(data || []));
   }, [selectedInvoice]);
 
-  // Generate PDF for an invoice
+  const handleGenerateMonthly = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-monthly-invoices", {
+        body: { target_month: selectedMonth },
+      });
+      if (error) throw error;
+      const result = data as { created: number; updated: number; errors: string[] };
+      if (result.errors && result.errors.length > 0) {
+        toast.error(`Errori: ${result.errors.join(", ")}`);
+      }
+      toast.success(`Fatture generate: ${result.created} nuove, ${result.updated} aggiornate`);
+      fetchInvoices();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Errore generazione fatture");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleMarkAsSent = async (invoiceId: string) => {
+    const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoiceId);
+    if (error) toast.error("Errore");
+    else { toast.success("Fattura segnata come inviata"); fetchInvoices(); setSelectedInvoice(null); }
+  };
+
   const handleGeneratePdf = async (inv: InvoiceRow) => {
-    // Fetch patient details
     const { data: patient } = await supabase.from("patients").select("first_name, last_name, tax_code, address, city").eq("id", inv.patient_id).maybeSingle();
-    // Fetch invoice items
     const { data: items } = await supabase.from("invoice_items").select("description, quantity, unit_amount, total_amount").eq("invoice_id", inv.id);
 
     downloadInvoicePdf({
@@ -139,18 +214,6 @@ export default function InvoicesPage() {
     toast.success("PDF generato");
   };
 
-  const handleMarkAsPaid = async (invoiceId: string) => {
-    const { error } = await supabase.from("invoices").update({ status: "paid" }).eq("id", invoiceId);
-    if (error) toast.error("Errore");
-    else { toast.success("Fattura segnata come pagata"); fetchInvoices(); setSelectedInvoice(null); }
-  };
-
-  const handleMarkAsSent = async (invoiceId: string) => {
-    const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoiceId);
-    if (error) toast.error("Errore");
-    else { toast.success("Fattura segnata come inviata"); fetchInvoices(); setSelectedInvoice(null); }
-  };
-
   const filtered = useMemo(() => {
     let list = [...invoices];
     if (statusFilter !== "all") list = list.filter(i => i.status === statusFilter);
@@ -163,71 +226,44 @@ export default function InvoicesPage() {
 
   const totals = useMemo(() => ({
     outstanding: invoices.filter(i => ["sent", "issued", "overdue", "partially_paid"].includes(i.status || "")).reduce((s, i) => s + (i.total_amount || 0), 0),
-    overdue: invoices.filter(i => i.status === "overdue").reduce((s, i) => s + (i.total_amount || 0), 0),
     draft: invoices.filter(i => i.status === "draft").length,
+    total: invoices.reduce((s, i) => s + (i.total_amount || 0), 0),
   }), [invoices]);
-
-  const paidAmount = invoicePayments.reduce((s, p) => s + (p.amount || 0), 0);
-
-  const handleCreate = async () => {
-    if (!newPatientId || !newAmount || !practiceProfileId) return;
-    setSaving(true);
-    const { data: pp } = await supabase.from("practice_profiles").select("invoice_prefix, invoice_next_number").eq("id", practiceProfileId).maybeSingle();
-    const prefix = pp?.invoice_prefix || "SYN";
-    const nextNum = pp?.invoice_next_number || 1;
-    const invoiceNumber = `${prefix}${String(nextNum).padStart(3, "0")}`;
-    const amount = parseFloat(newAmount);
-
-    const { error } = await supabase.from("invoices").insert({
-      practice_profile_id: practiceProfileId,
-      patient_id: newPatientId,
-      invoice_number: invoiceNumber,
-      issue_date: newIssueDate,
-      due_date: newDueDate || null,
-      subtotal: amount,
-      total_amount: amount,
-      status: "draft",
-    });
-    if (!error) {
-      await supabase.from("practice_profiles").update({ invoice_next_number: nextNum + 1 }).eq("id", practiceProfileId);
-      toast.success(`Fattura ${invoiceNumber} creata`);
-      setCreateDrawerOpen(false);
-      setNewPatientId(""); setNewAmount(""); setNewDueDate("");
-      fetchInvoices();
-    } else { toast.error("Errore creazione fattura"); }
-    setSaving(false);
-  };
-
-  const handleStatusChange = async (invoiceId: string, newStatus: string) => {
-    const { error } = await supabase.from("invoices").update({ status: newStatus }).eq("id", invoiceId);
-    if (error) toast.error("Errore aggiornamento stato");
-    else { toast.success("Stato aggiornato"); fetchInvoices(); setSelectedInvoice(null); }
-  };
-
-  const handleDelete = async (invoiceId: string) => {
-    const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
-    if (error) toast.error("Errore eliminazione fattura");
-    else { toast.success("Fattura eliminata"); setSelectedInvoice(null); fetchInvoices(); }
-  };
 
   return (
     <PageContainer>
       <div className="space-y-4 animate-fade-in">
         <SectionHeader
           title="Fatture"
-          subtitle={`${invoices.length} totali`}
-          action={<Button size="sm" onClick={() => setCreateDrawerOpen(true)}><Plus size={14} /> Nuova</Button>}
+          subtitle={`${invoices.length} nel mese`}
+          action={
+            <Button size="sm" onClick={handleGenerateMonthly} disabled={generating}>
+              {generating ? <><Loader2 size={14} className="animate-spin" /> Generazione…</> : <><CalendarDays size={14} /> Genera fatture mese</>}
+            </Button>
+          }
         />
+
+        {/* Month selector */}
+        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map(m => (
+              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Summary strip */}
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
+            <p className="font-display text-lg font-bold text-foreground">€{totals.total}</p>
+            <p className="text-[11px] text-muted-foreground">Totale</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
             <p className="font-display text-lg font-bold text-foreground">€{totals.outstanding}</p>
             <p className="text-[11px] text-muted-foreground">In sospeso</p>
-          </div>
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-center">
-            <p className="font-display text-lg font-bold text-destructive">€{totals.overdue}</p>
-            <p className="text-[11px] text-muted-foreground">Scadute</p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
             <p className="font-display text-lg font-bold text-foreground">{totals.draft}</p>
@@ -260,8 +296,7 @@ export default function InvoicesPage() {
           <EmptyState
             icon={FileText}
             title={search ? "Nessun risultato" : "Nessuna fattura"}
-            description={search ? "Prova a modificare la ricerca" : "Crea la tua prima fattura"}
-            action={!search ? <Button size="sm" onClick={() => setCreateDrawerOpen(true)}><Plus size={14} /> Nuova fattura</Button> : undefined}
+            description={search ? "Prova a modificare la ricerca" : "Genera le fatture del mese con il pulsante in alto"}
           />
         ) : (
           <div className="space-y-2">
@@ -275,10 +310,11 @@ export default function InvoicesPage() {
                     <p className="text-sm font-medium text-foreground">{inv.invoice_number || "—"}</p>
                     <InvoiceStatusBadge status={(inv.status as InvoiceStatus) || "draft"} />
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{inv.patient_name} · €{inv.total_amount || 0}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {inv.patient_name} · €{inv.total_amount || 0} · {inv.service_count} {inv.service_count === 1 ? "seduta" : "sedute"}
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    {inv.issue_date || "—"}{inv.due_date ? ` · Scad. ${inv.due_date}` : ""}
-                    {inv.service_date ? ` · Seduta ${inv.service_date}` : ""}
+                    {formatBillingMonth(inv.billing_month)}
                   </p>
                 </div>
                 <ChevronRight size={16} className="text-muted-foreground shrink-0" />
@@ -294,9 +330,9 @@ export default function InvoicesPage() {
           <DrawerContent>
             <DrawerHeader>
               <DrawerTitle>Fattura {selectedInvoice.invoice_number}</DrawerTitle>
-              <DrawerDescription>{selectedInvoice.patient_name}</DrawerDescription>
+              <DrawerDescription>{selectedInvoice.patient_name} · {formatBillingMonth(selectedInvoice.billing_month)}</DrawerDescription>
             </DrawerHeader>
-            <div className="px-4 space-y-4 pb-2">
+            <div className="px-4 space-y-4 pb-2 max-h-[60vh] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Stato</span>
                 <InvoiceStatusBadge status={(selectedInvoice.status as InvoiceStatus) || "draft"} />
@@ -307,53 +343,36 @@ export default function InvoicesPage() {
                   <span className="text-foreground">{selectedInvoice.issue_date || "—"}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Scadenza</span>
-                  <span className="text-foreground">{selectedInvoice.due_date || "—"}</span>
+                  <span className="text-muted-foreground">Mese</span>
+                  <span className="text-foreground">{formatBillingMonth(selectedInvoice.billing_month)}</span>
                 </div>
-                {selectedInvoice.service_date && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Data seduta</span>
-                    <span className="text-foreground">{selectedInvoice.service_date}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Importo</span>
+                  <span className="text-muted-foreground">Importo totale</span>
                   <span className="font-medium text-foreground">€{selectedInvoice.total_amount || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Pagato</span>
-                  <span className="font-medium text-foreground">€{paidAmount}</span>
+                  <span className="text-muted-foreground">Sedute incluse</span>
+                  <span className="text-foreground">{linkedRecords.length}</span>
                 </div>
-                {(selectedInvoice.total_amount || 0) - paidAmount > 0 && (
-                  <div className="flex justify-between border-t border-border pt-2">
-                    <span className="text-muted-foreground font-medium">Residuo</span>
-                    <span className="font-bold text-destructive">€{(selectedInvoice.total_amount || 0) - paidAmount}</span>
-                  </div>
-                )}
               </div>
-              {invoicePayments.length > 0 && (
+
+              {/* Linked service records */}
+              {linkedRecords.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-foreground mb-2">Pagamenti registrati</p>
-                  {invoicePayments.map(p => (
-                    <div key={p.id} className="flex items-center justify-between text-sm py-1">
-                      <span className="text-muted-foreground">{p.payment_date || "—"}</span>
-                      <span className="text-foreground">€{p.amount} · {paymentMethodLabels[(p.method || "cash") as keyof typeof paymentMethodLabels] || p.method}</span>
-                    </div>
-                  ))}
+                  <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide">Servizi inclusi</p>
+                  <div className="space-y-1.5">
+                    {linkedRecords.map(sr => (
+                      <div key={sr.id} className="flex items-center justify-between text-sm rounded-lg bg-card border border-border p-3">
+                        <div>
+                          <p className="text-foreground font-medium">{sr.service_type || "Seduta"}</p>
+                          <p className="text-xs text-muted-foreground">{sr.service_date || "—"} · {sr.duration_minutes || 0} min</p>
+                        </div>
+                        <span className="font-medium text-foreground">€{sr.amount || 0}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {/* Status change */}
-              <div className="space-y-2">
-                <Label className="text-xs">Cambia stato</Label>
-                <Select value={selectedInvoice.status || "draft"} onValueChange={v => handleStatusChange(selectedInvoice.id, v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {(["draft", "issued", "sent", "paid", "partially_paid", "overdue", "cancelled"] as InvoiceStatus[]).map(s => (
-                      <SelectItem key={s} value={s}>{invoiceStatusLabels[s]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <DrawerFooter>
               <div className="flex flex-col gap-2 w-full">
@@ -365,14 +384,6 @@ export default function InvoicesPage() {
                     <Send size={14} /> Segna come inviata
                   </Button>
                 )}
-                {["draft", "issued", "sent", "overdue"].includes(selectedInvoice.status || "") && (
-                  <Button variant="outline" size="sm" onClick={() => handleMarkAsPaid(selectedInvoice.id)}>
-                    <CheckCircle2 size={14} /> Segna come pagata
-                  </Button>
-                )}
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(selectedInvoice.id)}>
-                  <Trash2 size={14} /> Elimina fattura
-                </Button>
                 <DrawerClose asChild>
                   <Button variant="ghost" size="sm">Chiudi</Button>
                 </DrawerClose>
@@ -380,49 +391,6 @@ export default function InvoicesPage() {
             </DrawerFooter>
           </DrawerContent>
         )}
-      </Drawer>
-
-      {/* Create invoice drawer */}
-      <Drawer open={createDrawerOpen} onOpenChange={setCreateDrawerOpen}>
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Nuova fattura</DrawerTitle>
-            <DrawerDescription>Crea una nuova fattura</DrawerDescription>
-          </DrawerHeader>
-          <div className="px-4 space-y-4">
-            <div className="space-y-2">
-              <Label>Paziente *</Label>
-              <Select value={newPatientId} onValueChange={setNewPatientId}>
-                <SelectTrigger><SelectValue placeholder="Seleziona paziente" /></SelectTrigger>
-                <SelectContent>
-                  {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Importo (€) *</Label>
-                <Input type="number" value={newAmount} onChange={e => setNewAmount(e.target.value)} placeholder="80" />
-              </div>
-              <div className="space-y-2">
-                <Label>Data emissione</Label>
-                <Input type="date" value={newIssueDate} onChange={e => setNewIssueDate(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Scadenza</Label>
-              <Input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)} />
-            </div>
-          </div>
-          <DrawerFooter>
-            <Button className="w-full" onClick={handleCreate} disabled={saving || !newPatientId || !newAmount}>
-              {saving ? "Salvataggio..." : "Crea fattura"}
-            </Button>
-            <DrawerClose asChild>
-              <Button variant="outline" className="w-full">Annulla</Button>
-            </DrawerClose>
-          </DrawerFooter>
-        </DrawerContent>
       </Drawer>
     </PageContainer>
   );
