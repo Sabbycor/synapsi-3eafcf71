@@ -9,9 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Loader2, Clock, CheckCircle2, FileText, CalendarDays, Download } from "lucide-react";
+import { ArrowLeft, Loader2, Clock, CheckCircle2, CalendarDays } from "lucide-react";
 import { completeAppointmentCascade } from "@/lib/appointmentCascade";
-import { downloadInvoicePdf } from "@/lib/generateInvoicePdf";
 import { auditSessionClosed } from "@/lib/auditLog";
 import { MicroFeedback } from "@/components/MicroFeedback";
 
@@ -68,8 +67,6 @@ export default function SessionClosurePage() {
   useEffect(() => {
     async function load() {
       setLoading(true);
-
-      // Fetch appointment + patient name
       const { data: appt, error: apptErr } = await supabase
         .from("appointments")
         .select("id, patient_id, starts_at, ends_at, status, patients(first_name, last_name)")
@@ -83,10 +80,8 @@ export default function SessionClosurePage() {
         setLoading(false);
         return;
       }
-
       setAppointment(appt as AppointmentData | null);
 
-      // Fetch practice defaults for pre-filling
       const { data: profile } = await supabase
         .from("practice_profiles")
         .select("default_session_price, default_session_duration")
@@ -97,10 +92,8 @@ export default function SessionClosurePage() {
       if (defaults?.default_session_price) {
         setAmount(String(defaults.default_session_price));
       }
-
       setLoading(false);
     }
-
     if (id) load();
   }, [id, practiceProfileId]);
 
@@ -136,13 +129,10 @@ export default function SessionClosurePage() {
     return Object.keys(newErrors).length === 0;
   }
 
-  const [cascadeResult, setCascadeResult] = useState<{ invoiceId: string; invoiceNumber: string } | null>(null);
-
   async function handleClose() {
     if (!validate() || !appointment) return;
     setSubmitting(true);
     try {
-      // Use cascade: creates service_record + invoice + invoice_items
       const result = await completeAppointmentCascade({
         id: appointment.id,
         patient_id: appointment.patient_id,
@@ -158,16 +148,10 @@ export default function SessionClosurePage() {
         amount: parseFloat(amount),
       }).eq("id", result.serviceRecordId);
 
-      // Update invoice amount if user changed it
-      const amt = parseFloat(amount);
-      await supabase.from("invoices").update({ total_amount: amt, subtotal: amt }).eq("id", result.invoiceId);
-      await supabase.from("invoice_items").update({ unit_amount: amt, total_amount: amt }).eq("invoice_id", result.invoiceId);
-
-      setCascadeResult({ invoiceId: result.invoiceId, invoiceNumber: result.invoiceNumber });
       setCompleted(true);
       setShowFeedback(true);
-      await auditSessionClosed(appointment.id, result.invoiceNumber);
-      toast({ title: "Seduta chiusa", description: `Fattura ${result.invoiceNumber} generata automaticamente` });
+      await auditSessionClosed(appointment.id, "service_recorded");
+      toast({ title: "Seduta chiusa", description: "Servizio registrato. Genera la fattura mensile dalla sezione Fatture." });
     } catch (err: any) {
       console.error("[SessionClosure] cascade error:", err);
       toast({ title: "Errore chiusura seduta", description: err.message, variant: "destructive" });
@@ -176,31 +160,6 @@ export default function SessionClosurePage() {
     }
   }
 
-  async function handleDownloadPdf() {
-    if (!cascadeResult || !appointment) return;
-    const { data: patient } = await supabase.from("patients").select("first_name, last_name, tax_code, address, city").eq("id", appointment.patient_id).maybeSingle();
-    const { data: pp } = await supabase.from("practice_profiles").select("professional_name, practice_name, vat_number, tax_code").eq("id", practiceProfileId).maybeSingle();
-    const amt = parseFloat(amount);
-    downloadInvoicePdf({
-      invoiceNumber: cascadeResult.invoiceNumber,
-      issueDate: new Date().toISOString().slice(0, 10),
-      dueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
-      professionalName: pp?.professional_name || "Professionista",
-      practiceName: pp?.practice_name,
-      vatNumber: pp?.vat_number,
-      taxCode: pp?.tax_code,
-      patientName: patient ? `${patient.first_name} ${patient.last_name}` : patientName,
-      patientTaxCode: patient?.tax_code,
-      patientAddress: patient?.address,
-      patientCity: patient?.city,
-      items: [{ description: serviceType || "Seduta psicologica", quantity: 1, unitAmount: amt, totalAmount: amt }],
-      subtotal: amt,
-      totalAmount: amt,
-      paymentMethod: paymentMethod === "cash" ? "Contanti" : paymentMethod === "card" ? "Carta" : paymentMethod === "bank_transfer" ? "Bonifico" : paymentMethod,
-    });
-  }
-
-  // Loading state
   if (loading) {
     return (
       <PageContainer>
@@ -211,7 +170,6 @@ export default function SessionClosurePage() {
     );
   }
 
-  // Not found
   if (!appointment) {
     return (
       <PageContainer>
@@ -226,7 +184,6 @@ export default function SessionClosurePage() {
     );
   }
 
-  // Success state
   if (completed) {
     return (
       <PageContainer>
@@ -236,17 +193,14 @@ export default function SessionClosurePage() {
           </div>
           <h2 className="font-display text-xl font-bold text-foreground">Seduta chiusa</h2>
           <p className="text-sm text-muted-foreground max-w-[320px]">
-            La seduta con {patientName} è stata registrata correttamente. Vuoi generare la fattura?
+            La seduta con {patientName} è stata registrata. Potrai generare la fattura mensile dalla sezione Fatture.
           </p>
           <div className="flex flex-col gap-2 w-full max-w-[320px] pt-4">
-            <Button onClick={handleDownloadPdf}>
-              <Download size={14} /> Scarica PDF fattura
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/invoices")}>
-              <FileText size={14} /> Vai alle fatture
+            <Button onClick={() => navigate("/invoices")}>
+              Vai alle fatture
             </Button>
             <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <CalendarDays size={14} /> Fai dopo
+              <CalendarDays size={14} /> Torna alla dashboard
             </Button>
           </div>
           {showFeedback && <MicroFeedback contextAction="session_closure" onDismiss={() => setShowFeedback(false)} />}
@@ -255,11 +209,9 @@ export default function SessionClosurePage() {
     );
   }
 
-  // Main form
   return (
     <PageContainer>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/calendar")}>
             <ArrowLeft size={18} />
@@ -270,7 +222,6 @@ export default function SessionClosurePage() {
           </div>
         </div>
 
-        {/* Read-only summary */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card space-y-3">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Riepilogo</p>
           <div className="space-y-2">
@@ -293,9 +244,7 @@ export default function SessionClosurePage() {
           </div>
         </div>
 
-        {/* Editable fields */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-card space-y-4">
-          {/* Amount */}
           <div className="space-y-2">
             <Label>Importo seduta (€)</Label>
             <Input
@@ -309,7 +258,6 @@ export default function SessionClosurePage() {
             {errors.amount && <p className="text-xs text-destructive">{errors.amount}</p>}
           </div>
 
-          {/* Service type */}
           <div className="space-y-2">
             <Label>Tipo prestazione</Label>
             <Select value={serviceType} onValueChange={v => { setServiceType(v); setErrors(prev => ({ ...prev, serviceType: "" })); }}>
@@ -325,7 +273,6 @@ export default function SessionClosurePage() {
             {errors.serviceType && <p className="text-xs text-destructive">{errors.serviceType}</p>}
           </div>
 
-          {/* Payment method */}
           <div className="space-y-2">
             <Label>Metodo di pagamento</Label>
             <Select value={paymentMethod} onValueChange={v => { setPaymentMethod(v); setErrors(prev => ({ ...prev, paymentMethod: "" })); }}>
@@ -341,7 +288,6 @@ export default function SessionClosurePage() {
             {errors.paymentMethod && <p className="text-xs text-destructive">{errors.paymentMethod}</p>}
           </div>
 
-          {/* Admin notes */}
           <div className="space-y-2">
             <Label>Note operative (opzionale)</Label>
             <Textarea
@@ -355,7 +301,6 @@ export default function SessionClosurePage() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col gap-2">
           <Button onClick={handleClose} disabled={submitting}>
             {submitting ? <><Loader2 size={14} className="animate-spin" /> Chiusura in corso…</> : <><CheckCircle2 size={14} /> Chiudi seduta</>}
