@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import {
-  TrendingUp, CalendarCheck, UserX, FileText, Clock,
+  TrendingUp, CalendarCheck, UserX, FileText,
 } from "lucide-react";
 
 interface MonthlyStats {
@@ -22,8 +22,6 @@ export function MonthlyReports() {
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
   const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
-  const monthLabel = now.toLocaleDateString("it-IT", { month: "long", year: "numeric" });
-
   useEffect(() => {
     if (!practiceProfileId) return;
     async function fetch() {
@@ -93,17 +91,14 @@ export function MonthlyReports() {
   ];
 
   return (
-    <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">{monthLabel}</p>
-      <div className="grid grid-cols-2 gap-2">
-        {cards.map(c => (
-          <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
-            <c.icon size={14} className={c.color} />
-            <p className="font-display text-lg font-bold text-foreground mt-1">{c.value}</p>
-            <p className="text-[11px] text-muted-foreground">{c.label}</p>
-          </div>
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-2">
+      {cards.map(c => (
+        <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
+          <c.icon size={14} className={c.color} />
+          <p className="font-display text-lg font-bold text-foreground mt-1">{c.value}</p>
+          <p className="text-[11px] text-muted-foreground">{c.label}</p>
+        </div>
+      ))}
     </div>
   );
 }

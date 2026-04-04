@@ -127,7 +127,7 @@ export function AiCoachChips() {
 
   if (actions.length === 0) {
     return (
-      <div className="rounded-xl border border-success/20 bg-success/5 p-4 text-center">
+      <div className="flex min-h-[11rem] flex-col items-center justify-center rounded-xl border border-success/20 bg-success/5 px-3 py-6 text-center">
         <p className="text-sm font-medium text-success">Tutto in ordine ✓</p>
         <p className="text-xs text-muted-foreground mt-1">Nessuna azione urgente richiesta</p>
       </div>

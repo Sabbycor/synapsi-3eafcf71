@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
+import posthog from "posthog-js";
 
 const STATUS_FILTERS: (InvoiceStatus | "all")[] = ["all", "draft", "issued", "sent", "paid", "partially_paid", "overdue", "cancelled"];
 
@@ -161,6 +162,14 @@ export default function InvoicesPage() {
       });
       if (error) throw error;
       const result = data as { created: number; updated: number; errors: string[] };
+      posthog.capture(
+        "invoice_generated",
+        {
+          billing_month: selectedMonth,
+          invoices_count: (Number(result?.created) || 0) + (Number(result?.updated) || 0),
+        },
+        { send_instantly: true }
+      );
       if (result.errors && result.errors.length > 0) {
         toast.error(`Errori: ${result.errors.join(", ")}`);
       }
@@ -174,10 +183,22 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleMarkAsSent = async (invoiceId: string) => {
-    const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoiceId);
+  const handleMarkAsSent = async (invoice: InvoiceRow) => {
+    const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoice.id);
     if (error) toast.error("Errore");
-    else { toast.success("Fattura segnata come inviata"); fetchInvoices(); setSelectedInvoice(null); }
+    else {
+      posthog.capture(
+        "invoice_sent",
+        {
+          billing_month: invoice.billing_month,
+          total_amount: invoice.total_amount,
+        },
+        { send_instantly: true }
+      );
+      toast.success("Fattura segnata come inviata");
+      fetchInvoices();
+      setSelectedInvoice(null);
+    }
   };
 
   const handleGeneratePdf = async (inv: InvoiceRow) => {
@@ -380,7 +401,7 @@ export default function InvoicesPage() {
                   <Download size={14} /> Genera PDF
                 </Button>
                 {selectedInvoice.status === "draft" && (
-                  <Button variant="outline" size="sm" onClick={() => handleMarkAsSent(selectedInvoice.id)}>
+                  <Button variant="outline" size="sm" onClick={() => handleMarkAsSent(selectedInvoice)}>
                     <Send size={14} /> Segna come inviata
                   </Button>
                 )}

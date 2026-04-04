@@ -13,6 +13,7 @@ import { ArrowLeft, Loader2, Clock, CheckCircle2, CalendarDays } from "lucide-re
 import { completeAppointmentCascade } from "@/lib/appointmentCascade";
 import { auditSessionClosed } from "@/lib/auditLog";
 import { MicroFeedback } from "@/components/MicroFeedback";
+import posthog from "posthog-js";
 
 const SERVICE_TYPES = [
   { value: "Colloquio individuale", label: "Colloquio individuale" },
@@ -149,6 +150,16 @@ export default function SessionClosurePage() {
       }).eq("id", result.serviceRecordId);
 
       setCompleted(true);
+      posthog.capture(
+        "session_closed",
+        {
+          service_type: serviceType,
+          payment_method: paymentMethod,
+          amount: parseFloat(amount),
+          duration_minutes: durationMinutes,
+        },
+        { send_instantly: true }
+      );
       setShowFeedback(true);
       await auditSessionClosed(appointment.id, "service_recorded");
       toast({ title: "Seduta chiusa", description: "Servizio registrato. Genera la fattura mensile dalla sezione Fatture." });

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import posthog from "posthog-js";
 
 const steps = [
   "Dati professionista",
@@ -70,7 +71,18 @@ export default function OnboardingPage() {
   const prev = () => {
     if (step > 0) setStep(step - 1);
   };
-  const finish = () => navigate("/preview");
+  const finish = () => {
+    posthog.capture(
+      "onboarding_completed",
+      {
+        specialization: data.specialization,
+        payment_method: data.paymentMethod,
+        reminders_enabled: data.reminders,
+      },
+      { send_instantly: true }
+    );
+    navigate("/preview");
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
