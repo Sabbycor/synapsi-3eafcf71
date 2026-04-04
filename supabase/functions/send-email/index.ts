@@ -76,6 +76,8 @@ serve(async (req: Request) => {
   };
 
   try {
+    console.log("send-email: calling Brevo", { type: template_id, email: to.email });
+
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -85,6 +87,8 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify(payload),
     });
+
+    console.log("send-email: Brevo responded", { status: response.status });
 
     if (!response.ok) {
       const errorBody = await response.text();
@@ -100,8 +104,9 @@ serve(async (req: Request) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
-    console.error("Network error calling Brevo:", err);
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error("send-email: network error", { error: errMsg });
     return new Response(
       JSON.stringify({ success: false, error: "Network error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
