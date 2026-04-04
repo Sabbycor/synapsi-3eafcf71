@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2 } from "lucide-react";
+import posthog from "posthog-js";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +73,10 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
+
+      posthog.capture("user_signed_up", {
+        method: "email_password",
+      });
 
       // Check if a session was created (auto-confirm enabled) or email confirmation is needed
       const { data: sessionData } = await supabase.auth.getSession();
