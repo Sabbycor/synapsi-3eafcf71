@@ -196,31 +196,18 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Bottom sections: same header spacing + same card shell so columns align */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-          <div className="flex min-h-0 flex-col">
-            <SectionHeader
-              title="Azioni suggerite"
-              className="mb-3 shrink-0"
-              subtitle={
-                <span className="invisible capitalize select-none" aria-hidden>
-                  {reportMonthLabel}
-                </span>
-              }
-            />
-            <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
-              <AiCoachChips />
-            </div>
+        {/* Bottom sections: side by side on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* AI Coach — Suggested Actions */}
+          <div>
+            <SectionHeader title="Azioni suggerite" className="mb-3" />
+            <AiCoachChips />
           </div>
-          <div className="flex min-h-0 flex-col">
-            <SectionHeader
-              title="Report del mese"
-              className="mb-3 shrink-0"
-              subtitle={<span className="capitalize">{reportMonthLabel}</span>}
-            />
-            <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
-              <MonthlyReports />
-            </div>
+
+          {/* Monthly Reports */}
+          <div>
+            <SectionHeader title="Report del mese" className="mb-3" />
+            <MonthlyReports />
           </div>
         </div>
       </div>
