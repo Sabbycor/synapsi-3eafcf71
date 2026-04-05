@@ -196,17 +196,21 @@ export default function DashboardPage() {
         </div>
 
         {/* Bottom sections: side by side on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {/* AI Coach — Suggested Actions */}
-          <div>
+          <div className="flex flex-col">
             <SectionHeader title="Azioni suggerite" className="mb-3" />
-            <AiCoachChips />
+            <div className="flex-1">
+              <AiCoachChips />
+            </div>
           </div>
 
           {/* Monthly Reports */}
-          <div>
+          <div className="flex flex-col">
             <SectionHeader title="Report del mese" className="mb-3" />
-            <MonthlyReports />
+            <div className="flex-1">
+              <MonthlyReports />
+            </div>
           </div>
         </div>
       </div>
