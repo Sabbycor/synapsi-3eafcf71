@@ -216,10 +216,14 @@ export default function DashboardPage() {
             <SectionHeader
               title="Report del mese"
               className="mb-3 shrink-0"
-              subtitle={<span className="capitalize">{reportMonthLabel}</span>}
+              subtitle={
+                <span className="invisible capitalize select-none" aria-hidden>
+                  {reportMonthLabel}
+                </span>
+              }
             />
             <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
-              <MonthlyReports />
+              <MonthlyReports monthLabel={reportMonthLabel} />
             </div>
           </div>
         </div>
