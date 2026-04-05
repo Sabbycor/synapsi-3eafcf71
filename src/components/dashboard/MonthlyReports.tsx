@@ -13,7 +13,12 @@ interface MonthlyStats {
   onTimePaymentRate: number;
 }
 
-export function MonthlyReports() {
+interface MonthlyReportsProps {
+  /** Calendar month these stats refer to (e.g. from dashboard, aligned with query range). */
+  monthLabel: string;
+}
+
+export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
   const practiceProfileId = usePracticeProfileId();
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,8 +80,13 @@ export function MonthlyReports() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-2">
-        {[1, 2, 3, 4].map(i => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">
+          {monthLabel}
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}
+        </div>
       </div>
     );
   }
@@ -91,14 +101,19 @@ export function MonthlyReports() {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {cards.map(c => (
-        <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
-          <c.icon size={14} className={c.color} />
-          <p className="font-display text-lg font-bold text-foreground mt-1">{c.value}</p>
-          <p className="text-[11px] text-muted-foreground">{c.label}</p>
-        </div>
-      ))}
+    <div>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">
+        {monthLabel}
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {cards.map(c => (
+          <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
+            <c.icon size={14} className={c.color} />
+            <p className="font-display text-lg font-bold text-foreground mt-1">{c.value}</p>
+            <p className="text-[11px] text-muted-foreground">{c.label}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

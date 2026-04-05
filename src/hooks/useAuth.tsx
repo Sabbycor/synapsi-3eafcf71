@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { capturePostHog, identifyPostHog, resetPostHog } from "@/lib/posthogAnalytics";
 
 interface AuthContextType {
   session: Session | null;
@@ -23,6 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         setSession(session);
         setLoading(false);
+        if (session?.user) {
+          identifyPostHog(session.user.id, {
+            email: session.user.email,
+            subscription_status: session.user.user_metadata?.subscription_status ?? "trial",
+            trial_end_date: session.user.user_metadata?.trial_end_date ?? null,
+          });
+        }
       }
     );
 
@@ -30,6 +38,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
+      if (session?.user) {
+        identifyPostHog(session.user.id, {
+          email: session.user.email,
+          subscription_status: session.user.user_metadata?.subscription_status ?? "trial",
+          trial_end_date: session.user.user_metadata?.trial_end_date ?? null,
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -56,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    capturePostHog("user_logged_out");
+    resetPostHog();
     await supabase.auth.signOut();
   };
 

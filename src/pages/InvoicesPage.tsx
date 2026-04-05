@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { toast } from "sonner";
-import posthog from "posthog-js";
+import { capturePostHog } from "@/lib/posthogAnalytics";
 
 const STATUS_FILTERS: (InvoiceStatus | "all")[] = ["all", "draft", "issued", "sent", "paid", "partially_paid", "overdue", "cancelled"];
 
@@ -162,7 +162,7 @@ export default function InvoicesPage() {
       });
       if (error) throw error;
       const result = data as { created: number; updated: number; errors: string[] };
-      posthog.capture(
+      capturePostHog(
         "invoice_generated",
         {
           billing_month: selectedMonth,
@@ -187,7 +187,7 @@ export default function InvoicesPage() {
     const { error } = await supabase.from("invoices").update({ status: "sent", sent_at: new Date().toISOString() }).eq("id", invoice.id);
     if (error) toast.error("Errore");
     else {
-      posthog.capture(
+      capturePostHog(
         "invoice_sent",
         {
           billing_month: invoice.billing_month,

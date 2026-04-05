@@ -13,7 +13,7 @@ import { ArrowLeft, Loader2, Clock, CheckCircle2, CalendarDays } from "lucide-re
 import { completeAppointmentCascade } from "@/lib/appointmentCascade";
 import { auditSessionClosed } from "@/lib/auditLog";
 import { MicroFeedback } from "@/components/MicroFeedback";
-import posthog from "posthog-js";
+import { capturePostHog } from "@/lib/posthogAnalytics";
 
 const SERVICE_TYPES = [
   { value: "Colloquio individuale", label: "Colloquio individuale" },
@@ -150,7 +150,7 @@ export default function SessionClosurePage() {
       }).eq("id", result.serviceRecordId);
 
       setCompleted(true);
-      posthog.capture(
+      capturePostHog(
         "session_closed",
         {
           service_type: serviceType,

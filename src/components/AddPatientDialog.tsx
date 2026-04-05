@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import posthog from "posthog-js";
+import { capturePostHog } from "@/lib/posthogAnalytics";
 
 interface AddPatientDialogProps {
   open: boolean;
@@ -73,7 +73,7 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
       return;
     }
 
-    posthog.capture("patient_created", undefined, { send_instantly: true });
+    capturePostHog("patient_created", undefined, { send_instantly: true });
 
     if (data?.[0]) await auditPatientCreated(data[0].id, `${form.first_name} ${form.last_name}`);
     toast({ title: "Paziente aggiunto", description: `${form.first_name} ${form.last_name} è stato creato.` });

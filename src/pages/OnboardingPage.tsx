@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import posthog from "posthog-js";
+import { capturePostHog } from "@/lib/posthogAnalytics";
 
 const steps = [
   "Dati professionista",
@@ -72,7 +72,7 @@ export default function OnboardingPage() {
     if (step > 0) setStep(step - 1);
   };
   const finish = () => {
-    posthog.capture(
+    capturePostHog(
       "onboarding_completed",
       {
         specialization: data.specialization,
