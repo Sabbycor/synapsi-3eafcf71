@@ -26,11 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setLoading(false);
         if (session?.user) {
-<<<<<<< HEAD
           identifyPostHog(session.user.id, {
-=======
-          posthog.identify(session.user.id, {
->>>>>>> cursor/posthog-synapsi-e4253
             email: session.user.email,
             subscription_status: session.user.user_metadata?.subscription_status ?? "trial",
             trial_end_date: session.user.user_metadata?.trial_end_date ?? null,
@@ -76,13 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-<<<<<<< HEAD
     capturePostHog("user_logged_out");
     resetPostHog();
-=======
-    posthog.capture("user_logged_out");
-    posthog.reset();
->>>>>>> cursor/posthog-synapsi-e4253
     await supabase.auth.signOut();
   };
 
