@@ -196,7 +196,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-<<<<<<< HEAD
         {/* Bottom sections: same header spacing + same card shell so columns align */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
           <div className="flex min-h-0 flex-col">
@@ -226,20 +225,6 @@ export default function DashboardPage() {
             <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
               <MonthlyReports monthLabel={reportMonthLabel} />
             </div>
-=======
-        {/* Bottom sections: side by side on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* AI Coach — Suggested Actions */}
-          <div>
-            <SectionHeader title="Azioni suggerite" className="mb-3" />
-            <AiCoachChips />
-          </div>
-
-          {/* Monthly Reports */}
-          <div>
-            <SectionHeader title="Report del mese" className="mb-3" />
-            <MonthlyReports />
->>>>>>> cursor/posthog-synapsi-e4253
           </div>
         </div>
       </div>
