@@ -24,6 +24,7 @@ import PaymentsPage from "./pages/PaymentsPage";
 import TasksPage from "./pages/TasksPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuditLogPage from "./pages/AuditLogPage";
+import UpgradePage from "./pages/UpgradePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/audit-log" element={<AuditLogPage />} />
+                <Route path="/upgrade" element={<UpgradePage />} />
               </Route>
             </Route>
 
