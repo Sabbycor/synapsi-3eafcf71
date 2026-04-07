@@ -746,6 +746,9 @@ export type Database = {
           full_name: string | null
           id: string
           role: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string
           trial_end_date: string | null
           updated_at: string | null
         }
@@ -755,6 +758,9 @@ export type Database = {
           full_name?: string | null
           id: string
           role?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
           trial_end_date?: string | null
           updated_at?: string | null
         }
@@ -764,6 +770,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string
           trial_end_date?: string | null
           updated_at?: string | null
         }
