@@ -98,7 +98,7 @@ export default function UpgradePage() {
             {/* Annual */}
             <div className="rounded-xl border-2 border-primary bg-card p-6 shadow-card space-y-4 flex flex-col relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
-                Più popolare
+                Più conveniente
               </div>
               <div>
                 <h3 className="font-display font-semibold text-lg text-foreground">{PLANS.annual.label}</h3>
