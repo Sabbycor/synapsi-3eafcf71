@@ -7,7 +7,6 @@ export type SubscriptionStatus = "trial" | "active_premium" | "expired" | "cance
 interface SubscriptionContextType {
   status: SubscriptionStatus;
   trialEndDate: string | null;
-  subscriptionEnd: string | null;
   loading: boolean;
   isPremium: boolean;
   isPaywalled: boolean;
@@ -37,10 +36,9 @@ const PLANS = {
 export { PLANS };
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const { user, session } = useAuth();
+  const { session } = useAuth();
   const [status, setStatus] = useState<SubscriptionStatus>("trial");
   const [trialEndDate, setTrialEndDate] = useState<string | null>(null);
-  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -55,7 +53,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       if (!error && data) {
         setStatus(data.subscription_status ?? "trial");
         setTrialEndDate(data.trial_end_date ?? null);
-        setSubscriptionEnd(data.subscription_end ?? null);
       }
     } catch (e) {
       console.error("Failed to check subscription:", e);
@@ -64,18 +61,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }
   }, [session?.access_token]);
 
+  // Check once on mount / session change — no polling (webhooks keep DB in sync)
   useEffect(() => {
     refresh();
-    // Auto-refresh every 60 seconds
-    const interval = setInterval(refresh, 60_000);
-    return () => clearInterval(interval);
   }, [refresh]);
 
   const isPremium = status === "active_premium";
   const isPaywalled = status === "expired" || status === "cancelled";
 
   return (
-    <SubscriptionContext.Provider value={{ status, trialEndDate, subscriptionEnd, loading, isPremium, isPaywalled, refresh }}>
+    <SubscriptionContext.Provider value={{ status, trialEndDate, loading, isPremium, isPaywalled, refresh }}>
       {children}
     </SubscriptionContext.Provider>
   );
