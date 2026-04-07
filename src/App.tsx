@@ -24,6 +24,7 @@ import PaymentsPage from "./pages/PaymentsPage";
 import TasksPage from "./pages/TasksPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuditLogPage from "./pages/AuditLogPage";
+import UpgradePage from "./pages/UpgradePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
