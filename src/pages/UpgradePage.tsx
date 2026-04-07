@@ -19,7 +19,7 @@ const features = [
 ];
 
 export default function UpgradePage() {
-  const { status, isPremium, trialEndDate, subscriptionEnd } = useSubscription();
+  const { status, isPremium, trialEndDate } = useSubscription();
   const { session } = useAuth();
   const { toast } = useToast();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
