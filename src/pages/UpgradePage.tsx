@@ -57,7 +57,7 @@ export default function UpgradePage() {
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
             {isPremium
-              ? `Il tuo abbonamento è attivo${subscriptionEnd ? ` fino al ${format(new Date(subscriptionEnd), "d MMMM yyyy", { locale: it })}` : ""}.`
+              ? "Il tuo abbonamento Premium è attivo."
               : status === "trial" && trialEndDate
                 ? `Il tuo periodo di prova termina il ${format(new Date(trialEndDate), "d MMMM yyyy", { locale: it })}.`
                 : "Sblocca tutte le funzionalità per gestire il tuo studio al meglio."}
