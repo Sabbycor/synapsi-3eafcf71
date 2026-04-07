@@ -24,6 +24,7 @@ export type Database = {
           location_type: string | null
           patient_id: string
           practice_profile_id: string
+          reminder_sent: boolean
           starts_at: string
           status: string | null
           updated_at: string | null
@@ -37,6 +38,7 @@ export type Database = {
           location_type?: string | null
           patient_id: string
           practice_profile_id: string
+          reminder_sent?: boolean
           starts_at: string
           status?: string | null
           updated_at?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           location_type?: string | null
           patient_id?: string
           practice_profile_id?: string
+          reminder_sent?: boolean
           starts_at?: string
           status?: string | null
           updated_at?: string | null
