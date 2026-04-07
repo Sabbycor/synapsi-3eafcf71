@@ -29,6 +29,8 @@ export default function ProfilePage() {
   const [nameError, setNameError] = useState("");
   const [supportOpen, setSupportOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const { isPremium } = useSubscription();
 
   const fetchProfile = async () => {
     if (!user) return;
