@@ -19,7 +19,7 @@ const features = [
 ];
 
 export default function UpgradePage() {
-  const { status, isPremium, trialEndDate, subscriptionEnd } = useSubscription();
+  const { status, isPremium, trialEndDate } = useSubscription();
   const { session } = useAuth();
   const { toast } = useToast();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -34,7 +34,7 @@ export default function UpgradePage() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       }
     } catch (e) {
       toast({ title: "Errore", description: "Impossibile avviare il checkout. Riprova.", variant: "destructive" });
@@ -57,7 +57,7 @@ export default function UpgradePage() {
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
             {isPremium
-              ? `Il tuo abbonamento è attivo${subscriptionEnd ? ` fino al ${format(new Date(subscriptionEnd), "d MMMM yyyy", { locale: it })}` : ""}.`
+              ? "Il tuo abbonamento Premium è attivo."
               : status === "trial" && trialEndDate
                 ? `Il tuo periodo di prova termina il ${format(new Date(trialEndDate), "d MMMM yyyy", { locale: it })}.`
                 : "Sblocca tutte le funzionalità per gestire il tuo studio al meglio."}
@@ -98,7 +98,7 @@ export default function UpgradePage() {
             {/* Annual */}
             <div className="rounded-xl border-2 border-primary bg-card p-6 shadow-card space-y-4 flex flex-col relative">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-primary text-primary-foreground text-xs font-semibold rounded-full">
-                Più popolare
+                Più conveniente
               </div>
               <div>
                 <h3 className="font-display font-semibold text-lg text-foreground">{PLANS.annual.label}</h3>

@@ -14,9 +14,7 @@ export function SubscriptionBanner() {
       <div className="flex items-center gap-2 text-sm text-warning-foreground">
         <AlertCircle size={16} className="shrink-0 text-warning" />
         <span>
-          {status === "expired"
-            ? "Il tuo periodo di prova è terminato. Passa a Premium per continuare senza limiti."
-            : "Il tuo abbonamento è stato cancellato. Riattiva Premium per accesso completo."}
+          Il tuo periodo di prova è scaduto — attiva Premium per continuare
         </span>
       </div>
       <Button
