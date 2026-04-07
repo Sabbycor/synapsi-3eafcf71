@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Save, Check, Loader2, User, AlertCircle, Shield, MessageSquare, Download } from "lucide-react";
+import { LogOut, Save, Check, Loader2, User, AlertCircle, Shield, MessageSquare, Download, CreditCard, ExternalLink } from "lucide-react";
 import { SupportInbox } from "@/components/SupportInbox";
 import { ExportDrawer } from "@/components/ExportDrawer";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
