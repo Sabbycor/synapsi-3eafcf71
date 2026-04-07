@@ -202,6 +202,33 @@ export default function ProfilePage() {
               <p className="text-xs text-muted-foreground">CSV per commercialista e Sistema TS</p>
             </div>
           </button>
+          {isPremium && (
+            <button
+              disabled={portalLoading}
+              onClick={async () => {
+                setPortalLoading(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("customer-portal", {
+                    headers: { Authorization: `Bearer ${user?.id ? (await supabase.auth.getSession()).data.session?.access_token : ""}` },
+                  });
+                  if (error) throw error;
+                  if (data?.url) window.open(data.url, "_blank");
+                } catch {
+                  toast({ title: "Errore", description: "Impossibile aprire il portale abbonamento.", variant: "destructive" });
+                } finally {
+                  setPortalLoading(false);
+                }
+              }}
+              className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
+            >
+              <CreditCard size={16} className="text-accent shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">Gestisci abbonamento</p>
+                <p className="text-xs text-muted-foreground">Modifica piano, metodo di pagamento o cancella</p>
+              </div>
+              {portalLoading ? <Loader2 size={14} className="animate-spin text-muted-foreground" /> : <ExternalLink size={14} className="text-muted-foreground" />}
+            </button>
+          )}
           <button onClick={() => navigate("/audit-log")} className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors">
             <Shield size={16} className="text-accent shrink-0" />
             <div className="flex-1">

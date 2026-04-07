@@ -60,6 +60,7 @@ const App = () => (
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/audit-log" element={<AuditLogPage />} />
+                <Route path="/upgrade" element={<UpgradePage />} />
               </Route>
             </Route>
 
