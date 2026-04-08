@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { AiCoachChips } from "@/components/dashboard/AiCoachChips";
+import { AiCoachPanel } from "@/components/dashboard/AiCoachPanel";
 import { MonthlyReports } from "@/components/dashboard/MonthlyReports";
 import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
@@ -209,7 +209,7 @@ export default function DashboardPage() {
               }
             />
             <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
-              <AiCoachChips />
+              <AiCoachPanel />
             </div>
           </div>
           <div className="flex min-h-0 flex-col">
