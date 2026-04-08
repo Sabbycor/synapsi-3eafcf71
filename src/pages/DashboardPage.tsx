@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
-import { AiCoachChips } from "@/components/dashboard/AiCoachChips";
+import { AiCoachPanel } from "@/components/dashboard/AiCoachPanel";
 import { MonthlyReports } from "@/components/dashboard/MonthlyReports";
 import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
