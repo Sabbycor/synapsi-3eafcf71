@@ -31,8 +31,13 @@ const priorityOrder: Priority[] = ["urgent", "week", "whenever"];
 export function AiCoachPanel() {
   const practiceProfileId = usePracticeProfileId();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tsConfirmOpen, setTsConfirmOpen] = useState(false);
+  const [tsCount, setTsCount] = useState(0);
+  const [tsApptIds, setTsApptIds] = useState<string[]>([]);
+  const [tsSubmitting, setTsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!practiceProfileId) return;
@@ -44,7 +49,37 @@ export function AiCoachPanel() {
       const todayIso = now.toISOString();
 
       try {
-        // 🔴 CF mancante — patients with future appointment but no tax_code
+        // 🔴 Tessera Sanitaria — completed, not transmitted, current or previous month
+        const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+        const { data: tsAppts } = await supabase
+          .from("appointments")
+          .select("id, patient_id, patients(tax_code)")
+          .eq("practice_profile_id", practiceProfileId)
+          .eq("status", "completed")
+          .eq("ts_transmitted", false)
+          .gte("starts_at", startOfPrevMonth.toISOString())
+          .lte("starts_at", endOfCurrentMonth.toISOString());
+
+        if (tsAppts) {
+          const eligible = (tsAppts as any[]).filter(
+            (a) => a.patients && a.patients.tax_code && a.patients.tax_code.trim() !== ""
+          );
+          if (eligible.length > 0) {
+            const ids = eligible.map((a) => a.id);
+            setTsCount(eligible.length);
+            setTsApptIds(ids);
+            result.push({
+              id: "ts-transmit",
+              priority: "urgent",
+              text: `Hai ${eligible.length} prestazioni da trasmettere al Sistema Tessera Sanitaria — verifica entro fine mese`,
+              actionLabel: "Segna come trasmesse",
+            });
+          }
+        }
+
+        // 🔴 CF mancante
         const { data: futureAppts } = await supabase
           .from("appointments")
           .select("patient_id, patients(id, first_name, last_name, tax_code)")
@@ -69,7 +104,7 @@ export function AiCoachPanel() {
           }
         }
 
-        // 🔴 Pagamento in ritardo — completed appointments >30 days with no payment
+        // 🔴 Pagamento in ritardo
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data: oldCompleted } = await supabase
           .from("appointments")
@@ -79,8 +114,7 @@ export function AiCoachPanel() {
           .lt("starts_at", thirtyDaysAgo);
 
         if (oldCompleted && oldCompleted.length > 0) {
-          // Check which have invoices marked as paid
-          const apptIds = (oldCompleted as any[]).map(a => a.id);
+          const apptIds = (oldCompleted as any[]).map((a) => a.id);
           const { data: srs } = await supabase
             .from("service_records")
             .select("appointment_id, id")
@@ -88,7 +122,7 @@ export function AiCoachPanel() {
 
           const paidApptIds = new Set<string>();
           if (srs && srs.length > 0) {
-            const srIds = srs.map(s => s.id);
+            const srIds = srs.map((s) => s.id);
             const { data: invs } = await supabase
               .from("invoices")
               .select("service_record_id, status")
@@ -96,7 +130,7 @@ export function AiCoachPanel() {
             if (invs) {
               for (const inv of invs) {
                 if (inv.status === "paid") {
-                  const sr = srs.find(s => s.id === inv.service_record_id);
+                  const sr = srs.find((s) => s.id === inv.service_record_id);
                   if (sr) paidApptIds.add(sr.appointment_id);
                 }
               }
@@ -117,7 +151,7 @@ export function AiCoachPanel() {
           }
         }
 
-        // 🟡 Fattura da emettere — completed appointments this week with no invoice
+        // 🟡 Fattura da emettere
         const startOfWeek = new Date(now);
         startOfWeek.setDate(now.getDate() - now.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
@@ -130,7 +164,7 @@ export function AiCoachPanel() {
           .lte("starts_at", todayIso);
 
         if (weekCompleted && weekCompleted.length > 0) {
-          const wIds = (weekCompleted as any[]).map(a => a.id);
+          const wIds = (weekCompleted as any[]).map((a) => a.id);
           const { data: wSrs } = await supabase
             .from("service_records")
             .select("appointment_id, id")
@@ -138,14 +172,14 @@ export function AiCoachPanel() {
 
           const invoicedApptIds = new Set<string>();
           if (wSrs && wSrs.length > 0) {
-            const wSrIds = wSrs.map(s => s.id);
+            const wSrIds = wSrs.map((s) => s.id);
             const { data: wInvs } = await supabase
               .from("invoices")
               .select("service_record_id")
               .in("service_record_id", wSrIds);
             if (wInvs) {
               for (const inv of wInvs) {
-                const sr = wSrs.find(s => s.id === inv.service_record_id);
+                const sr = wSrs.find((s) => s.id === inv.service_record_id);
                 if (sr) invoicedApptIds.add(sr.appointment_id);
               }
             }
@@ -179,7 +213,7 @@ export function AiCoachPanel() {
             .gt("starts_at", todayIso)
             .neq("status", "cancelled");
 
-          const patientsWithFuture = new Set((futureAll ?? []).map(a => a.patient_id));
+          const patientsWithFuture = new Set((futureAll ?? []).map((a) => a.patient_id));
 
           for (const p of activePatients) {
             if (!patientsWithFuture.has(p.id)) {
@@ -197,8 +231,12 @@ export function AiCoachPanel() {
         console.error("[AiCoachPanel]", err);
       }
 
-      // Sort by priority, max 10
-      result.sort((a, b) => priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
+      // Sort: ts-transmit always first, then by priority
+      result.sort((a, b) => {
+        if (a.id === "ts-transmit") return -1;
+        if (b.id === "ts-transmit") return 1;
+        return priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+      });
       setSuggestions(result.slice(0, 10));
       setLoading(false);
     }
@@ -206,10 +244,35 @@ export function AiCoachPanel() {
     analyze();
   }, [practiceProfileId]);
 
+  async function handleTsConfirm() {
+    setTsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .update({ ts_transmitted: true })
+        .in("id", tsApptIds);
+
+      if (error) throw error;
+
+      setSuggestions((prev) => prev.filter((s) => s.id !== "ts-transmit"));
+      setTsCount(0);
+      setTsApptIds([]);
+      toast({ title: "Prestazioni segnate come trasmesse ✅" });
+    } catch (err) {
+      console.error("[AiCoachPanel] ts update error", err);
+      toast({ title: "Errore durante l'aggiornamento", variant: "destructive" });
+    } finally {
+      setTsSubmitting(false);
+      setTsConfirmOpen(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-2">
-        {[1, 2, 3].map(i => <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />)}
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
+        ))}
       </div>
     );
   }
@@ -223,31 +286,64 @@ export function AiCoachPanel() {
   }
 
   return (
-    <div className="space-y-2">
-      {suggestions.map(s => {
-        const cfg = priorityConfig[s.priority];
-        return (
-          <div
-            key={s.id}
-            className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 shadow-card"
-          >
-            <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.bg} ${cfg.text}`}>
-              {cfg.emoji} {cfg.label}
-            </span>
-            <p className="flex-1 min-w-0 text-sm text-foreground leading-snug line-clamp-2">{s.text}</p>
-            {s.actionLabel && s.route && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="shrink-0 text-xs h-7"
-                onClick={() => navigate(s.route!)}
+    <>
+      <div className="space-y-2">
+        {suggestions.map((s) => {
+          const cfg = priorityConfig[s.priority];
+          return (
+            <div
+              key={s.id}
+              className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 shadow-card"
+            >
+              <span
+                className={`shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.bg} ${cfg.text}`}
               >
-                {s.actionLabel} <ChevronRight size={12} />
-              </Button>
-            )}
-          </div>
-        );
-      })}
-    </div>
+                {cfg.emoji} {cfg.label}
+              </span>
+              <p className="flex-1 min-w-0 text-sm text-foreground leading-snug line-clamp-2">{s.text}</p>
+              {s.id === "ts-transmit" ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 text-xs h-7"
+                  onClick={() => setTsConfirmOpen(true)}
+                >
+                  {s.actionLabel} <ChevronRight size={12} />
+                </Button>
+              ) : (
+                s.actionLabel &&
+                s.route && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-xs h-7"
+                    onClick={() => navigate(s.route!)}
+                  >
+                    {s.actionLabel} <ChevronRight size={12} />
+                  </Button>
+                )
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={tsConfirmOpen} onOpenChange={setTsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conferma trasmissione</AlertDialogTitle>
+            <AlertDialogDescription>
+              Confermi la trasmissione di {tsCount} prestazioni?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={tsSubmitting}>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={handleTsConfirm} disabled={tsSubmitting}>
+              {tsSubmitting ? "Aggiornamento…" : "Conferma"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
