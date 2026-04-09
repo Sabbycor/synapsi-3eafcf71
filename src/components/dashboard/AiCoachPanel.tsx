@@ -3,13 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ChevronRight, RefreshCw, Heart, Users } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-
+import { useAtRiskPatients } from "@/hooks/useAtRiskPatients";
+import { AtRiskPatientCard } from "@/components/dashboard/AtRiskPatientCard";
 type Priority = "urgent" | "week" | "whenever";
 
 interface Suggestion {
