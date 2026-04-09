@@ -12,6 +12,7 @@ import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { AiCoachPanel } from "@/components/dashboard/AiCoachPanel";
 import { MonthlyReports } from "@/components/dashboard/MonthlyReports";
+import { WeeklyBriefingCard } from "@/components/dashboard/WeeklyBriefingCard";
 import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
   CalendarCheck, Receipt, AlertTriangle, Plus, ChevronRight, CalendarDays, FileText,
@@ -139,6 +140,9 @@ export default function DashboardPage() {
   return (
     <PageContainer>
       <div className="space-y-6 animate-fade-in">
+        {/* Weekly Briefing */}
+        <WeeklyBriefingCard />
+
         {/* Greeting */}
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Buongiorno, {greeting} 👋</h1>
