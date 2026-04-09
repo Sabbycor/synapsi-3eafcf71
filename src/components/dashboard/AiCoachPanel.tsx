@@ -42,9 +42,17 @@ export function AiCoachPanel() {
   const [tsApptIds, setTsApptIds] = useState<string[]>([]);
   const [tsSubmitting, setTsSubmitting] = useState(false);
 
+  const {
+    patients: atRiskPatients,
+    isLoading: atRiskLoading,
+    error: atRiskError,
+    fetchAtRiskPatients,
+    markAsContacted,
+  } = useAtRiskPatients();
+
   useEffect(() => {
     if (!practiceProfileId) return;
-
+    fetchAtRiskPatients();
     async function analyze() {
       setLoading(true);
       const result: Suggestion[] = [];
