@@ -315,6 +315,7 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          last_contacted_at: string | null
           last_name: string
           notes_admin: string | null
           phone: string | null
@@ -331,6 +332,7 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          last_contacted_at?: string | null
           last_name: string
           notes_admin?: string | null
           phone?: string | null
@@ -347,6 +349,7 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          last_contacted_at?: string | null
           last_name?: string
           notes_admin?: string | null
           phone?: string | null
