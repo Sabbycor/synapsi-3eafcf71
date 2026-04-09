@@ -140,6 +140,9 @@ export default function DashboardPage() {
   return (
     <PageContainer>
       <div className="space-y-6 animate-fade-in">
+        {/* Weekly Briefing */}
+        <WeeklyBriefingCard />
+
         {/* Greeting */}
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Buongiorno, {greeting} 👋</h1>
