@@ -278,20 +278,12 @@ export function AiCoachPanel() {
     }
   }
 
-  if (loading) {
+  if (loading && atRiskLoading) {
     return (
       <div className="space-y-2">
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
         ))}
-      </div>
-    );
-  }
-
-  if (suggestions.length === 0) {
-    return (
-      <div className="flex min-h-[11rem] flex-col items-center justify-center rounded-xl border border-success/20 bg-success/5 px-3 py-6 text-center">
-        <p className="text-base font-medium text-success">Tutto in ordine — nessuna azione necessaria 🎉</p>
       </div>
     );
   }
