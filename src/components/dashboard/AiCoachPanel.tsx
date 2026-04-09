@@ -290,46 +290,122 @@ export function AiCoachPanel() {
 
   return (
     <>
-      <div className="space-y-2">
-        {suggestions.map((s) => {
-          const cfg = priorityConfig[s.priority];
-          return (
-            <div
-              key={s.id}
-              className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 shadow-card"
-            >
-              <span
-                className={`shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.bg} ${cfg.text}`}
+      {/* At-risk patients section */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Users size={15} className="text-accent" />
+            <span className="text-sm font-semibold text-foreground">Pazienti da ricontattare</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs h-7"
+            onClick={fetchAtRiskPatients}
+            disabled={atRiskLoading}
+          >
+            <RefreshCw size={12} className={atRiskLoading ? "animate-spin" : ""} />
+          </Button>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-2">
+          {atRiskLoading
+            ? "Caricamento in corso..."
+            : atRiskPatients.length > 0
+              ? `${atRiskPatients.length} pazient${atRiskPatients.length === 1 ? "e" : "i"} necessit${atRiskPatients.length === 1 ? "a" : "ano"} attenzione`
+              : ""}
+        </p>
+
+        {atRiskLoading && (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="rounded-xl border border-border bg-card p-3.5 space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[90%]" />
+                <Skeleton className="h-4 w-[70%]" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {atRiskError && !atRiskLoading && (
+          <Alert variant="destructive">
+            <AlertDescription className="flex items-center justify-between">
+              <span>{atRiskError}</span>
+              <Button variant="outline" size="sm" onClick={fetchAtRiskPatients} className="text-xs ml-2">
+                Riprova
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!atRiskLoading && !atRiskError && atRiskPatients.length === 0 && (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-success/20 bg-success/5 px-3 py-4 text-center">
+            <Heart size={20} className="text-success mb-1" />
+            <p className="text-xs font-medium text-success">
+              Ottimo lavoro! Nessun paziente necessita di essere ricontattato.
+            </p>
+          </div>
+        )}
+
+        {!atRiskLoading && !atRiskError && atRiskPatients.length > 0 && (
+          <div className="space-y-2">
+            {atRiskPatients.map((p) => (
+              <AtRiskPatientCard key={p.id} patient={p} onMarkContacted={markAsContacted} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border my-3" />
+
+      {/* Existing suggestions */}
+      {suggestions.length === 0 && atRiskPatients.length === 0 && !atRiskLoading ? (
+        <div className="flex min-h-[6rem] flex-col items-center justify-center rounded-xl border border-success/20 bg-success/5 px-3 py-4 text-center">
+          <p className="text-sm font-medium text-success">Tutto in ordine — nessuna azione necessaria 🎉</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {suggestions.map((s) => {
+            const cfg = priorityConfig[s.priority];
+            return (
+              <div
+                key={s.id}
+                className="flex items-start gap-3 rounded-xl border border-border bg-card p-3.5 shadow-card"
               >
-                {cfg.emoji} {cfg.label}
-              </span>
-              <p className="flex-1 min-w-0 text-sm text-foreground leading-snug line-clamp-2">{s.text}</p>
-              {s.id === "ts-transmit" ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 text-xs h-7"
-                  onClick={() => setTsConfirmOpen(true)}
+                <span
+                  className={`shrink-0 mt-0.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cfg.bg} ${cfg.text}`}
                 >
-                  {s.actionLabel} <ChevronRight size={12} />
-                </Button>
-              ) : (
-                s.actionLabel &&
-                s.route && (
+                  {cfg.emoji} {cfg.label}
+                </span>
+                <p className="flex-1 min-w-0 text-sm text-foreground leading-snug line-clamp-2">{s.text}</p>
+                {s.id === "ts-transmit" ? (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="shrink-0 text-xs h-7"
-                    onClick={() => navigate(s.route!)}
+                    onClick={() => setTsConfirmOpen(true)}
                   >
                     {s.actionLabel} <ChevronRight size={12} />
                   </Button>
-                )
-              )}
-            </div>
-          );
-        })}
-      </div>
+                ) : (
+                  s.actionLabel &&
+                  s.route && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 text-xs h-7"
+                      onClick={() => navigate(s.route!)}
+                    >
+                      {s.actionLabel} <ChevronRight size={12} />
+                    </Button>
+                  )
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <AlertDialog open={tsConfirmOpen} onOpenChange={setTsConfirmOpen}>
         <AlertDialogContent>
