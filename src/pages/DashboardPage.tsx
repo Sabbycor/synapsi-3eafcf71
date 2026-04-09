@@ -12,6 +12,7 @@ import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
 import { useToast } from "@/hooks/use-toast";
 import { AiCoachPanel } from "@/components/dashboard/AiCoachPanel";
 import { MonthlyReports } from "@/components/dashboard/MonthlyReports";
+import { WeeklyBriefingCard } from "@/components/dashboard/WeeklyBriefingCard";
 import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
   CalendarCheck, Receipt, AlertTriangle, Plus, ChevronRight, CalendarDays, FileText,
