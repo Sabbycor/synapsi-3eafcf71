@@ -53,7 +53,7 @@ export default function UpgradePage() {
             {isPremium ? "Il tuo piano attuale" : "Scegli il tuo piano"}
           </div>
           <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">
-            {isPremium ? "Sei Premium! 🎉" : "Passa a AURA Premium"}
+            {isPremium ? "Sei Premium! 🎉" : "Passa a SYNAPSI Premium"}
           </h1>
           <p className="text-muted-foreground max-w-md mx-auto">
             {isPremium
