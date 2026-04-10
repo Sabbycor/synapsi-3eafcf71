@@ -16,6 +16,9 @@ Un pannello di controllo completo per monitorare appuntamenti, ricavi previsti e
 ### 📅 Gestione Appuntamenti e Pazienti
 Anagrafiche complete, storico sedute e tracciamento dello stato dei contatti.
 
+### 🔑 Autenticazione Passwordless
+Accesso sicuro e rapido tramite **Magic Links** (invio email gestito tramite **Brevo SMTP**), eliminando la necessità di gestire password complesse.
+
 ### 💳 Fatturazione e Abbonamenti
 Integrazione nativa con **Stripe** per la gestione del piano Premium, checkout sicuro e portale clienti dedicato.
 
@@ -30,6 +33,7 @@ Ogni lunedì, il sistema genera un riassunto strategico della settimana tramite 
 - **Linguaggio**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
 - **Analytics**: [PostHog](https://posthog.com/)
+- **Email Service**: [Brevo](https://www.brevo.com/) (SMTP per Magic Links)
 - **Database & Auth**: [Supabase](https://supabase.com/)
 - **Backend Logic**: [Supabase Edge Functions](https://supabase.com/docs/guides/functions) (Deno)
 - **AI Service**: [OpenRouter](https://openrouter.ai/)
