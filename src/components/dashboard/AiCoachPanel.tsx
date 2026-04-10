@@ -378,7 +378,7 @@ export function AiCoachPanel() {
                 >
                   {cfg.emoji} {cfg.label}
                 </span>
-                <p className="flex-1 min-w-0 text-sm text-foreground leading-snug line-clamp-2">{s.text}</p>
+                <p className="flex-1 min-w-0 text-sm text-foreground leading-snug">{s.text}</p>
                 {s.id === "ts-transmit" ? (
                   <Button
                     variant="ghost"
