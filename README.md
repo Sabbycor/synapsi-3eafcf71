@@ -1,73 +1,116 @@
-# Welcome to your Lovable project
+# 🧠 Synapsi
 
-## Project info
+**Synapsi** nasce dall'esigenza di evolvere. Il progetto rappresenta il salto tecnologico di una soluzione core precedentemente commissionata su **Microsoft Access**, oggi trasformata in una piattaforma SaaS cloud-native all'avanguardia. Il sistema automatizza la gestione clinica, il monitoraggio dei pazienti a rischio abbandono e la fatturazione, integrando un assistente AI per supportare il professionista nella comunicazione quotidiana.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## 🚀 Caratteristiche Principali
 
-There are several ways of editing your application.
+### 📊 Dashboard Clinica
+Un pannello di controllo completo per monitorare appuntamenti, ricavi previsti e statistiche della settimana in tempo reale.
 
-**Use Lovable**
+### 🤖 AI-Driven Patient Engagement
+- **Rilevamento Pazienti a Rischio**: Algoritmo proprietario che identifica i pazienti che non hanno prenotato sedute da oltre 21 giorni.
+- **Suggerimenti Messaggi IA**: Generazione di messaggi empatici e professionali tramite **OpenRouter AI** per riallacciare il contatto con i pazienti.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### 📅 Gestione Appuntamenti e Pazienti
+Anagrafiche complete, storico sedute e tracciamento dello stato dei contatti.
 
-Changes made via Lovable will be committed automatically to this repo.
+### 💳 Fatturazione e Abbonamenti
+Integrazione nativa con **Stripe** per la gestione del piano Premium, checkout sicuro e portale clienti dedicato.
 
-**Use your preferred IDE**
+### 📝 Weekly Briefing
+Ogni lunedì, il sistema genera un riassunto strategico della settimana tramite intelligenza artificiale, analizzando l'agenda e le priorità amministrative.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠 Tech Stack
 
-Follow these steps:
+- **Frontend**: [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Linguaggio**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Shadcn UI](https://ui.shadcn.com/)
+- **Analytics**: [PostHog](https://posthog.com/)
+- **Database & Auth**: [Supabase](https://supabase.com/)
+- **Backend Logic**: [Supabase Edge Functions](https://supabase.com/docs/guides/functions) (Deno)
+- **AI Service**: [OpenRouter](https://openrouter.ai/)
+- **Pagamenti**: [Stripe API](https://stripe.com/)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 📁 Struttura del Progetto
 
-# Step 3: Install the necessary dependencies.
-npm i
+```text
+├── src/
+│   ├── components/       # Componenti UI (Shadcn + Custom)
+│   ├── hooks/            # Logica di stato e chiamate API (React Query)
+│   ├── integrations/     # Configurazione Supabase Client
+│   ├── pages/            # View principali dell'applicazione
+│   └── lib/              # Utility e helper
+├── supabase/
+│   ├── functions/        # Edge Functions (Node/Deno)
+│   │   ├── at-risk-patients    # Analisi AI pazienti
+│   │   ├── weekly-briefing     # Report settimanale AI
+│   │   └── stripe-webhook      # Gestione eventi pagamenti
+│   └── config.toml       # Configurazione gateway e JWT
+└── README.md
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+> [!NOTE]
+> **Eredità del Progetto**: I file relativi alla soluzione originale basata su Microsoft Access sono conservati nella directory `/access_db` per consultazione e confronto storico.
+
+---
+
+## ⚙️ Configurazione Ambiente
+
+Per far girare il progetto localmente o in produzione, sono necessarie le seguenti variabili d'ambiente nel file `.env`:
+
+```env
+VITE_SUPABASE_URL=tuo_url_supabase
+VITE_SUPABASE_PUBLISHABLE_KEY=tua_anon_key
+VITE_PUBLIC_POSTHOG_HOST=tuo_host_posthog
+VITE_PUBLIC_POSTHOG_KEY=tua_key_posthog
+OPENROUTER_API_KEY=tua_chiave_openrouter
+STRIPE_SECRET_KEY=tua_chiave_segreta_stripe
+```
+
+---
+
+## 🛠 Installazione e Sviluppo
+
+1. **Clona il repository**:
+```bash
+git clone https://github.com/tuo-username/synapsi.git
+```
+
+2. **Installa le dipendenze**:
+```bash
+npm install
+```
+
+3. **Lancia l'ambiente di sviluppo**:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. **Deploy delle funzioni Supabase**:
+```bash
+npx supabase functions deploy --all
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 🗺 Roadmap
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- [x] Monitoraggio Pazienti a Rischio
+- [x] Integrazione AI Coach (OpenRouter)
+- [x] Gestione Abbonamenti Stripe
+- [ ] **Prossima Funzionalità**: Implementazione Cartella Clinica Elettronica (EHR) con crittografia end-to-end per la massima privacy dei dati sensibili.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 📄 Licenza
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Questo progetto è distribuito sotto licenza **MIT**. Consulta il file `LICENSE` per ulteriori dettagli.
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
