@@ -9,7 +9,7 @@ describe("AtRiskPatientCard", () => {
       id: "test-patient-123",
       first_name: "Mario",
       last_name: "Rossi",
-      days_since_last: 60, // Long time (High risk since > 45)
+      days_since_last: 60,
       total_appointments: 10,
       last_appointment_date: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
       last_contacted_at: null,

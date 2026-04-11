@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
-import { Button } from "@/components/ui/button";
 import {
-  FileText, AlertTriangle, Send, UserX, Clock, CheckCircle2,
+  AlertTriangle, Send, UserX, Clock, CheckCircle2,
   ChevronRight,
 } from "lucide-react";
 
