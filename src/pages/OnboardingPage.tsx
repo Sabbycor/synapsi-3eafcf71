@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +45,19 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState<StepData>(initialData);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Aspetta che la sessione sia pronta prima di rendere il form
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!session && event !== "INITIAL_SESSION") {
+          navigate("/login", { replace: true });
+        }
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const update = (field: keyof StepData, value: string | boolean) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -71,17 +85,62 @@ export default function OnboardingPage() {
   const prev = () => {
     if (step > 0) setStep(step - 1);
   };
-  const finish = () => {
-    capturePostHog(
-      "onboarding_completed",
-      {
-        specialization: data.specialization,
-        payment_method: data.paymentMethod,
-        reminders_enabled: data.reminders,
-      },
-      { send_instantly: true }
-    );
-    navigate("/preview");
+  const finish = async () => {
+    setLoading(true);
+    try {
+      // Non usare getUser() direttamente — potrebbe essere null dopo magic link
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session?.user) {
+        console.error('Sessione non disponibile');
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      // Salvataggio dati utente
+      const { error: userError } = await supabase
+        .from('users')
+        .upsert({
+          id: session.user.id,
+          full_name: data.name,
+          email: session.user.email,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (userError) {
+        console.error('Errore salvataggio utente:', userError);
+      }
+
+      // Creazione profilo professionale
+      const { error: profileError } = await supabase
+        .from('practice_profiles')
+        .upsert({
+          user_id: session.user.id,
+          professional_name: data.name,
+          practice_name: data.studioName || `${data.name} Studio`,
+          default_session_price: parseFloat(data.rate) || 0,
+        });
+
+      if (profileError) {
+        console.error('Errore salvataggio profilo:', profileError);
+      }
+
+      capturePostHog(
+        "onboarding_completed",
+        {
+          specialization: data.specialization,
+          payment_method: data.paymentMethod,
+          reminders_enabled: data.reminders,
+        },
+        { send_instantly: true }
+      );
+      
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      console.error("Errore imprevisto durante l'onboarding:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -238,8 +297,8 @@ export default function OnboardingPage() {
               Avanti <ChevronRight size={16} />
             </Button>
           ) : (
-            <Button onClick={finish} className="flex-1">
-              Completa configurazione
+            <Button onClick={finish} className="flex-1" disabled={loading}>
+              {loading ? "Salvataggio..." : "Completa configurazione"}
             </Button>
           )}
         </div>

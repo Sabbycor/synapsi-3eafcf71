@@ -55,8 +55,12 @@ export default function DashboardPage() {
       try {
         // Greeting
         const { data: userData } = await supabase.from("users").select("full_name, email").eq("id", user!.id).maybeSingle();
-        if (userData?.full_name) setGreeting(userData.full_name.split(" ")[0] || "Dottore/Dottoressa");
-        else if (userData?.email) setGreeting(userData.email);
+        if (userData?.full_name && userData.full_name.trim()) {
+          const firstName = userData.full_name.trim().split(/\s+/)[0];
+          setGreeting(firstName);
+        } else {
+          setGreeting("Professionista");
+        }
 
         // Today's appointments
         const { data: appts } = await supabase
@@ -145,7 +149,7 @@ export default function DashboardPage() {
 
         {/* Greeting */}
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Buongiorno, {greeting} 👋</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Ciao, {greeting} 👋</h1>
           <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
         </div>
 
