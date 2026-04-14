@@ -134,7 +134,7 @@ export default function OnboardingPage() {
         },
         { send_instantly: true }
       );
-      
+
       navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Errore imprevisto durante l'onboarding:", err);
@@ -285,7 +285,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Controls */}
-      <div className="border-t border-border bg-card p-6 pb-12 safe-bottom">
+      <div className="border-t border-border bg-card p-6 pb-20 safe-bottom">
         <div className="container max-w-xl mx-auto flex gap-3">
           {step > 0 && (
             <Button variant="outline" onClick={prev} className="flex-1">
