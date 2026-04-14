@@ -29,6 +29,11 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
   const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
   useEffect(() => {
     if (!practiceProfileId) return;
+    const nowLocal = new Date();
+    const start = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-01`;
+    const next = new Date(nowLocal.getFullYear(), nowLocal.getMonth() + 1, 1);
+    const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
+
     async function fetch() {
       setLoading(true);
 
@@ -36,18 +41,18 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
         // Revenue: completed payments this month
         supabase.from("payments").select("amount")
           .eq("status", "completed")
-          .gte("payment_date", monthStart).lt("payment_date", monthEnd)
+          .gte("payment_date", start).lt("payment_date", end)
           .in("invoice_id", (await supabase.from("invoices").select("id").eq("practice_profile_id", practiceProfileId)).data?.map(i => i.id) || []),
         // Sessions this month
         supabase.from("appointments").select("id", { count: "exact", head: true })
           .eq("practice_profile_id", practiceProfileId)
           .eq("status", "completed")
-          .gte("starts_at", `${monthStart}T00:00:00`).lt("starts_at", `${monthEnd}T00:00:00`),
+          .gte("starts_at", `${start}T00:00:00`).lt("starts_at", `${end}T00:00:00`),
         // No-shows this month
         supabase.from("appointments").select("id", { count: "exact", head: true })
           .eq("practice_profile_id", practiceProfileId)
           .eq("status", "no_show")
-          .gte("starts_at", `${monthStart}T00:00:00`).lt("starts_at", `${monthEnd}T00:00:00`),
+          .gte("starts_at", `${start}T00:00:00`).lt("starts_at", `${end}T00:00:00`),
         // Open invoices amount
         supabase.from("invoices").select("total_amount")
           .eq("practice_profile_id", practiceProfileId)
@@ -56,15 +61,14 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
         supabase.from("invoices").select("id, due_date, status")
           .eq("practice_profile_id", practiceProfileId)
           .eq("status", "paid")
-          .gte("issue_date", monthStart).lt("issue_date", monthEnd),
+          .gte("issue_date", start).lt("issue_date", end),
       ]);
 
       const revenue = (paymentsRes.data || []).reduce((s, p) => s + (p.amount || 0), 0);
       const openAmount = (openInvRes.data || []).reduce((s, i) => s + (i.total_amount || 0), 0);
 
-      // On-time rate: paid invoices where we assume they were paid before due_date
       const paidInvoices = totalInvRes.data || [];
-      const onTimeRate = paidInvoices.length > 0 ? 100 : 0; // simplified — no overdue ones in paid
+      const onTimeRate = paidInvoices.length > 0 ? 100 : 0;
 
       setStats({
         revenue,
@@ -76,7 +80,7 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
       setLoading(false);
     }
     fetch();
-  }, [practiceProfileId]);
+  }, [practiceProfileId, monthLabel]);
 
   if (loading) {
     return (

@@ -137,7 +137,7 @@ export default function CalendarPage() {
     }
     setAppointments((data as DbAppointment[] | null) ?? []);
     setLoading(false);
-  }, [practiceProfileId]);
+  }, [practiceProfileId, toast]);
 
   const fetchPatients = useCallback(async () => {
     const { data, error } = await supabase
@@ -164,9 +164,9 @@ export default function CalendarPage() {
   const getPatientNameFromAppt = (a: DbAppointment) =>
     a.patients ? `${a.patients.first_name} ${a.patients.last_name}` : "Sconosciuto";
 
-  const selectedParsed = parseLocalDate(selectedDate);
+  const selectedParsed = useMemo(() => parseLocalDate(selectedDate), [selectedDate]);
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate]);
-  const monthDates = useMemo(() => getMonthDates(selectedParsed.getFullYear(), selectedParsed.getMonth()), [selectedDate]);
+  const monthDates = useMemo(() => getMonthDates(selectedParsed.getFullYear(), selectedParsed.getMonth()), [selectedParsed]);
 
   const appointmentsWithEvents = useMemo(() => {
     const map = new Map<string, number>();
@@ -190,7 +190,7 @@ export default function CalendarPage() {
     }
     if (statusFilter !== "all") list = list.filter(a => a.status === statusFilter);
     return list;
-  }, [appointments, selectedDate, view, statusFilter, weekDates]);
+  }, [appointments, selectedDate, view, statusFilter, weekDates, selectedParsed]);
 
   const navigateDate = (dir: number) => {
     const d = parseLocalDate(selectedDate);
@@ -269,8 +269,8 @@ export default function CalendarPage() {
       }
       setActionDrawerOpen(false);
       fetchAppointments();
-    } catch (err: any) {
-      toast({ title: "Errore", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Errore", description: err instanceof Error ? err.message : "Errore sconosciuto", variant: "destructive" });
     }
     setActionLoading(false);
   };

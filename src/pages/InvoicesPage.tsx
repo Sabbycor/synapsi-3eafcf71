@@ -55,6 +55,39 @@ interface InvoiceRow {
   patient_name: string;
 }
 
+interface RawInvoice {
+  id: string;
+  invoice_number: string | null;
+  patient_id: string;
+  issue_date: string | null;
+  total_amount: number | null;
+  status: string | null;
+  billing_month: string | null;
+}
+
+interface RawPracticeProfile {
+  professional_name: string | null;
+  practice_name: string | null;
+  vat_number: string | null;
+  tax_code: string | null;
+  invoice_prefix: string | null;
+  invoice_next_number: number | null;
+}
+
+interface RawUnbilled {
+  id: string;
+  patient_id: string;
+  service_date: string | null;
+  service_type: string | null;
+  duration_minutes: number | null;
+  appointment_id: string;
+  practice_profile_id: string;
+}
+
+interface InvoiceWithPatient extends RawInvoice {
+  patients: { first_name: string; last_name: string } | null;
+}
+
 export default function InvoicesPage() {
   const practiceProfileId = usePracticeProfileId();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
@@ -70,11 +103,11 @@ export default function InvoicesPage() {
   const [finalizing, setFinalizing] = useState(false);
 
   // Practice data for PDF
-  const [practiceData, setPracticeData] = useState<any>(null);
+  const [practiceData, setPracticeData] = useState<RawPracticeProfile | null>(null);
   useEffect(() => {
     if (!practiceProfileId) return;
     supabase.from("practice_profiles").select("professional_name, practice_name, vat_number, tax_code, invoice_prefix, invoice_next_number").eq("id", practiceProfileId).maybeSingle()
-      .then(({ data }) => setPracticeData(data));
+      .then(({ data }) => setPracticeData(data as RawPracticeProfile | null));
   }, [practiceProfileId]);
 
   const fetchInvoices = useCallback(async () => {
@@ -92,18 +125,21 @@ export default function InvoicesPage() {
       .or(`billing_month.eq.${monthStart},and(billing_month.is.null,issue_date.gte.${monthStart},issue_date.lt.${monthEnd})`)
       .order("issue_date", { ascending: false });
 
-    if (error) { console.error(error); toast.error("Errore caricamento fatture"); }
+    if (error) { console.error(error); toast.error("Errore caricamento sedute"); return; }
     else {
-      setInvoices((data || []).map((i: any) => ({
-        id: i.id,
-        invoice_number: i.invoice_number,
-        patient_id: i.patient_id,
-        issue_date: i.issue_date,
-        total_amount: i.total_amount,
-        status: i.status,
-        billing_month: i.billing_month,
-        patient_name: i.patients ? `${i.patients.first_name} ${i.patients.last_name}` : "Sconosciuto",
-      })));
+      setInvoices((data || []).map((i: unknown) => {
+        const inv = i as InvoiceWithPatient;
+        return {
+          id: inv.id,
+          invoice_number: inv.invoice_number,
+          patient_id: inv.patient_id,
+          issue_date: inv.issue_date,
+          total_amount: inv.total_amount,
+          status: inv.status,
+          billing_month: inv.billing_month,
+          patient_name: inv.patients ? `${inv.patients.first_name} ${inv.patients.last_name}` : "Sconosciuto",
+        };
+      }));
     }
     setLoading(false);
   }, [practiceProfileId, selectedMonth]);
@@ -145,7 +181,7 @@ export default function InvoicesPage() {
     setFinalizing(false);
     fetchInvoices();
     // Refresh practice data
-    setPracticeData((prev: any) => prev ? { ...prev, invoice_next_number: nextNum } : prev);
+    setPracticeData((prev) => prev ? { ...prev, invoice_next_number: nextNum } : prev);
   };
 
   const handleMarkAsSent = async (invoice: InvoiceRow) => {

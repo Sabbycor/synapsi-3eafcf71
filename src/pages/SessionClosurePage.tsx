@@ -96,7 +96,7 @@ export default function SessionClosurePage() {
       setLoading(false);
     }
     if (id) load();
-  }, [id, practiceProfileId]);
+  }, [id, practiceProfileId, toast]);
 
   const patientName = appointment?.patients
     ? `${appointment.patients.first_name} ${appointment.patients.last_name}`
@@ -163,9 +163,9 @@ export default function SessionClosurePage() {
       setShowFeedback(true);
       await auditSessionClosed(appointment.id, "service_recorded");
       toast({ title: "Seduta chiusa", description: "Servizio registrato. Genera la fattura mensile dalla sezione Fatture." });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("[SessionClosure] cascade error:", err);
-      toast({ title: "Errore chiusura seduta", description: err.message, variant: "destructive" });
+      toast({ title: "Errore chiusura seduta", description: err instanceof Error ? err.message : "Errore sconosciuto", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }

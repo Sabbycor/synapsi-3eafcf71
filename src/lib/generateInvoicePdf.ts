@@ -90,7 +90,7 @@ export function generateInvoicePdf(data: InvoicePdfData): jsPDF {
   });
 
   // Totals
-  const finalY = (doc as any).lastAutoTable?.finalY ?? tableStartY + 30;
+  const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? tableStartY + 30;
   let yTotals = finalY + 10;
 
   doc.setFontSize(10);

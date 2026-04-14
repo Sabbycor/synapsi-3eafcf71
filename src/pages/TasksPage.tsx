@@ -38,6 +38,10 @@ interface TaskRow {
   patient_name?: string;
 }
 
+interface TaskWithPatient extends TaskRow {
+  patients: { first_name: string; last_name: string } | null;
+}
+
 export default function TasksPage() {
   const practiceProfileId = usePracticeProfileId();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
@@ -70,10 +74,13 @@ export default function TasksPage() {
       console.error(error);
       toast.error("Errore nel caricamento delle attività");
     } else {
-      setTasks((data || []).map((t: any) => ({
-        ...t,
-        patient_name: t.patients ? `${t.patients.first_name} ${t.patients.last_name}` : undefined,
-      })));
+      setTasks((data || []).map((t: unknown) => {
+        const task = t as TaskWithPatient;
+        return {
+          ...task,
+          patient_name: task.patients ? `${task.patients.first_name} ${task.patients.last_name}` : undefined,
+        } as TaskRow;
+      }));
     }
     setLoading(false);
   }, [practiceProfileId]);

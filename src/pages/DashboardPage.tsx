@@ -18,6 +18,14 @@ import {
   CalendarCheck, Receipt, AlertTriangle, Plus, ChevronRight, CalendarDays, FileText,
 } from "lucide-react";
 
+interface RawAppointment {
+  id: string;
+  patient_id: string;
+  starts_at: string;
+  ends_at: string;
+  status: string | null;
+}
+
 interface TodayAppointment {
   id: string;
   patient_id: string;
@@ -70,12 +78,12 @@ export default function DashboardPage() {
           .gte("starts_at", startOfDay).lte("starts_at", endOfDay)
           .order("starts_at", { ascending: true });
 
-        const apptList = (appts ?? []) as any[];
+        const apptList = (appts ?? []) as (RawAppointment & { patients: { first_name: string; last_name: string } | null })[];
 
         // Enrich completed appointments
         const completedIds = apptList.filter(a => a.status === "completed").map(a => a.id);
-        let serviceRecordMap = new Map<string, boolean>();
-        let invoiceMap = new Map<string, { exists: boolean; paid: boolean }>();
+        const serviceRecordMap = new Map<string, boolean>();
+        const invoiceMap = new Map<string, { exists: boolean; paid: boolean }>();
 
         if (completedIds.length > 0) {
           const { data: srs } = await supabase.from("service_records").select("appointment_id, id").in("appointment_id", completedIds);
@@ -95,7 +103,7 @@ export default function DashboardPage() {
           hasServiceRecord: serviceRecordMap.has(a.id),
           hasInvoice: invoiceMap.has(a.id),
           invoicePaid: invoiceMap.get(a.id)?.paid ?? false,
-        })));
+        }) as TodayAppointment));
 
         // Stats
         const [openRes, overdueRes] = await Promise.all([
@@ -105,15 +113,15 @@ export default function DashboardPage() {
             .eq("practice_profile_id", practiceProfileId).eq("status", "overdue"),
         ]);
         setStats({ sessionsToday: apptList.length, openInvoices: openRes.count ?? 0, overduePayments: overdueRes.count ?? 0 });
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("[Dashboard]", err);
-        toast({ title: "Errore", description: err.message, variant: "destructive" });
+        toast({ title: "Errore", description: err instanceof Error ? err.message : "Errore sconosciuto", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     }
     fetchAll();
-  }, [user, practiceProfileId]);
+  }, [user, practiceProfileId, endOfDay, startOfDay, toast]);
 
   function getTimeLabel(iso: string) { return new Date(iso).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }); }
   function getPatientName(a: TodayAppointment) { return a.patients ? `${a.patients.first_name} ${a.patients.last_name}` : "Sconosciuto"; }

@@ -90,7 +90,8 @@ Deno.serve(async (req) => {
       .eq("ts_transmitted", false);
 
     // Query 4: Active patients without future appointment
-    const { data: noFuturePatients } = await supabase.rpc("exec_sql" as any, {}).maybeSingle();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { data: noFuturePatients } = await supabase.rpc("exec_sql" as never, {}).maybeSingle();
     // Use a direct approach: get active patients, then check
     const { data: activePatients } = await supabase
       .from("patients")
@@ -100,7 +101,7 @@ Deno.serve(async (req) => {
 
     let patientsWithoutAppt = 0;
     if (activePatients && activePatients.length > 0) {
-      const patientIds = activePatients.map((p: any) => p.id);
+      const patientIds = activePatients.map((p: { id: string }) => p.id);
       const { data: futureAppts } = await supabase
         .from("appointments")
         .select("patient_id")
@@ -108,8 +109,8 @@ Deno.serve(async (req) => {
         .gt("starts_at", now.toISOString())
         .in("patient_id", patientIds);
 
-      const patientsWithFuture = new Set((futureAppts ?? []).map((a: any) => a.patient_id));
-      patientsWithoutAppt = patientIds.filter((id: string) => !patientsWithFuture.has(id)).length;
+      const patientsWithFuture = new Set((futureAppts ?? []).map((a: { patient_id: string }) => a.patient_id));
+      patientsWithoutAppt = patientIds.filter((id) => !patientsWithFuture.has(id)).length;
     }
 
     // Build OpenRouter request

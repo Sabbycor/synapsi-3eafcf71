@@ -22,6 +22,16 @@ import { toast } from "sonner";
 
 /* ── Types ─────────────────────────────────────────── */
 
+interface RawUnbilled {
+  id: string;
+  patient_id: string;
+  service_date: string | null;
+  service_type: string | null;
+  duration_minutes: number | null;
+  appointment_id: string;
+  practice_profile_id: string;
+}
+
 interface UnbilledRecord {
   id: string;
   patient_id: string;
@@ -42,7 +52,20 @@ interface PaidPayment {
   invoice_status: string | null;
 }
 
-/* ── Component ─────────────────────────────────────── */
+interface UnbilledWithPatient extends RawUnbilled {
+  patients: { first_name: string; last_name: string } | null;
+}
+
+interface PaymentWithPatient {
+  id: string;
+  patient_id: string;
+  payment_date: string | null;
+  amount: number | null;
+  method: string | null;
+  status: string | null;
+  invoices: { status: string | null } | null;
+  patients: { first_name: string; last_name: string } | null;
+}
 
 export default function PaymentsPage() {
   const practiceProfileId = usePracticeProfileId();
@@ -86,10 +109,19 @@ export default function PaymentsPage() {
       .order("service_date", { ascending: false });
 
     if (error) { console.error(error); toast.error("Errore caricamento sedute"); return; }
-    setUnbilled((data || []).map((r: any) => ({
-      ...r,
-      patient_name: r.patients ? `${r.patients.first_name} ${r.patients.last_name}` : "Sconosciuto",
-    })));
+    setUnbilled((data || []).map((r) => {
+      const row = r as UnbilledWithPatient;
+      return {
+        id: row.id,
+        patient_id: row.patient_id,
+        service_date: row.service_date,
+        service_type: row.service_type,
+        duration_minutes: row.duration_minutes,
+        appointment_id: row.appointment_id,
+        practice_profile_id: row.practice_profile_id,
+        patient_name: row.patients ? `${row.patients.first_name} ${row.patients.last_name}` : "Sconosciuto",
+      };
+    }));
   }, [practiceProfileId]);
 
   /* ── Fetch paid payments ── */
@@ -103,14 +135,17 @@ export default function PaymentsPage() {
       .order("payment_date", { ascending: false });
 
     if (error) { console.error(error); toast.error("Errore caricamento pagamenti"); return; }
-    setPaid((data || []).map((p: any) => ({
-      id: p.id,
-      patient_name: p.patients ? `${p.patients.first_name} ${p.patients.last_name}` : "Sconosciuto",
-      payment_date: p.payment_date,
-      amount: p.amount,
-      method: p.method,
-      invoice_status: p.invoices?.status || "draft",
-    })));
+    setPaid((data || []).map((p) => {
+      const pay = p as PaymentWithPatient;
+      return {
+        id: pay.id,
+        patient_name: pay.patients ? `${pay.patients.first_name} ${pay.patients.last_name}` : "Sconosciuto",
+        payment_date: pay.payment_date,
+        amount: pay.amount,
+        method: pay.method,
+        invoice_status: pay.invoices?.status || "draft",
+      };
+    }));
   }, [practiceProfileId]);
 
   useEffect(() => {
@@ -168,7 +203,7 @@ export default function PaymentsPage() {
           method: newMethod,
           status: "completed",
           notes: newNotes.trim() || null,
-        } as any);
+        });
 
       if (payErr) throw payErr;
 
@@ -180,7 +215,7 @@ export default function PaymentsPage() {
       resetForm();
       fetchUnbilled();
       fetchPaid();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       toast.error("Errore durante il salvataggio");
     } finally {

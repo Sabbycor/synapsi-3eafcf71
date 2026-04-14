@@ -38,7 +38,7 @@ export function SupportInbox({ open, onOpenChange }: SupportInboxProps) {
       category,
       message: message.trim() || null,
       context_action: "support_inbox",
-    } as any);
+    });
 
     if (error) {
       toast.error("Errore invio feedback");

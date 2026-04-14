@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const { isPremium } = useSubscription();
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     setFetchError(false);
@@ -64,11 +64,11 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchProfile();
-  }, [user]);
+  }, [fetchProfile]);
 
   const handleNameChange = (value: string) => {
     setFullName(value);

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 /**
  * Log a critical action to the audit_logs table.
@@ -8,18 +9,18 @@ export async function logAuditEvent(params: {
   action: string;
   entityType: string;
   entityId: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
 }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { error } = await supabase.from("audit_logs").insert([{
+  const { error } = await supabase.from("audit_logs").insert({
     actor_user_id: user.id,
     action: params.action,
     entity_type: params.entityType,
     entity_id: params.entityId,
-    metadata: (params.metadata ?? {}) as any,
-  }]);
+    metadata: params.metadata ?? {},
+  });
 
   if (error) {
     console.error("[AuditLog] Failed to write:", error.message);

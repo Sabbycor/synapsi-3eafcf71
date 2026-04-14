@@ -22,7 +22,7 @@ export function MicroFeedback({ contextAction, onDismiss }: MicroFeedbackProps) 
       category: "micro_feedback",
       rating: selectedRating,
       context_action: contextAction,
-    } as any);
+    });
     setSubmitted(true);
     setTimeout(onDismiss, 1800);
   };

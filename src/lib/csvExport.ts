@@ -11,15 +11,15 @@ export async function exportInvoicesCsv(practiceProfileId: string): Promise<stri
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Nessuna fattura da esportare");
 
-  const rows = (data as any[]).map(inv => ({
-    "Numero Fattura": inv.invoice_number || "",
-    "Data Emissione": inv.issue_date || "",
-    "Scadenza": inv.due_date || "",
-    "Paziente": inv.patients ? `${inv.patients.first_name} ${inv.patients.last_name}` : "",
-    "Codice Fiscale": inv.patients?.tax_code || "",
-    "Subtotale": inv.subtotal ?? "",
-    "Totale": inv.total_amount ?? "",
-    "Stato": inv.status || "",
+  const rows = (data as Record<string, unknown>[]).map(inv => ({
+    "Numero Fattura": (inv.invoice_number as string) || "",
+    "Data Emissione": (inv.issue_date as string) || "",
+    "Scadenza": (inv.due_date as string) || "",
+    "Paziente": inv.patients ? `${(inv.patients as Record<string, string>).first_name} ${(inv.patients as Record<string, string>).last_name}` : "",
+    "Codice Fiscale": (inv.patients as Record<string, string> | null)?.tax_code || "",
+    "Subtotale": (inv.subtotal as number) ?? "",
+    "Totale": (inv.total_amount as number) ?? "",
+    "Stato": (inv.status as string) || "",
   }));
 
   await auditExportPerformed("invoices_csv", rows.length);
@@ -44,16 +44,16 @@ export async function exportPaymentsCsv(practiceProfileId: string): Promise<stri
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Nessun pagamento da esportare");
 
-  const rows = (data as any[]).map(p => ({
-    "Data Pagamento": p.payment_date || "",
-    "Paziente": p.patients ? `${p.patients.first_name} ${p.patients.last_name}` : "",
-    "Importo": p.amount ?? "",
-    "Metodo": p.method || "",
-    "Stato": p.status || "",
-    "N. Fattura": invoiceMap.get(p.invoice_id) || "",
-    "ID Transazione": p.transaction_id || "",
-    "Rif. Bonifico": p.bank_reference || "",
-    "Note": p.notes || "",
+  const rows = (data as Record<string, unknown>[]).map(p => ({
+    "Data Pagamento": (p.payment_date as string) || "",
+    "Paziente": p.patients ? `${(p.patients as Record<string, string>).first_name} ${(p.patients as Record<string, string>).last_name}` : "",
+    "Importo": (p.amount as number) ?? "",
+    "Metodo": (p.method as string) || "",
+    "Stato": (p.status as string) || "",
+    "N. Fattura": invoiceMap.get(p.invoice_id as string) || "",
+    "ID Transazione": (p.transaction_id as string) || "",
+    "Rif. Bonifico": (p.bank_reference as string) || "",
+    "Note": (p.notes as string) || "",
   }));
 
   await auditExportPerformed("payments_csv", rows.length);
@@ -71,15 +71,16 @@ export async function exportTsReadyCsv(practiceProfileId: string): Promise<strin
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new Error("Nessuna fattura emessa da esportare per TS");
 
-  const rows = (data as any[]).map(inv => {
-    const hasCF = !!inv.patients?.tax_code;
+  const rows = (data as Record<string, unknown>[]).map(inv => {
+    const patients = inv.patients as Record<string, string> | null;
+    const hasCF = !!patients?.tax_code;
     return {
-      "Numero Fattura": inv.invoice_number || "",
-      "Data Emissione": inv.issue_date || "",
-      "Paziente": inv.patients ? `${inv.patients.first_name} ${inv.patients.last_name}` : "",
-      "Codice Fiscale": inv.patients?.tax_code || "⚠ MANCANTE",
-      "Importo": inv.total_amount ?? "",
-      "Stato": inv.status || "",
+      "Numero Fattura": (inv.invoice_number as string) || "",
+      "Data Emissione": (inv.issue_date as string) || "",
+      "Paziente": patients ? `${patients.first_name} ${patients.last_name}` : "",
+      "Codice Fiscale": patients?.tax_code || "⚠ MANCANTE",
+      "Importo": (inv.total_amount as number) ?? "",
+      "Stato": (inv.status as string) || "",
       "Pronto TS": hasCF ? "SÌ" : "NO — CF mancante",
     };
   });

@@ -37,8 +37,9 @@ export function ExportDrawer({ open, onOpenChange }: ExportDrawerProps) {
 
       downloadCsv(csv, filename);
       toast.success(`Export completato: ${filename}`);
-    } catch (err: any) {
-      toast.error(err.message || "Errore durante l'export");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Errore durante l'export";
+      toast.error(errorMessage);
     } finally {
       setExporting(null);
     }

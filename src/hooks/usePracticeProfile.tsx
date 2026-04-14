@@ -61,9 +61,9 @@ export function usePracticeProfile() {
         if (insertErr) throw insertErr;
 
         if (!cancelled) setProfile(created);
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("usePracticeProfile error:", err);
-        if (!cancelled) setError(err.message ?? "Errore caricamento profilo studio");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Errore caricamento profilo studio");
       } finally {
         if (!cancelled) setLoading(false);
       }

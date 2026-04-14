@@ -31,6 +31,18 @@ const priorityConfig: Record<Priority, { emoji: string; label: string; bg: strin
 
 const priorityOrder: Priority[] = ["urgent", "week", "whenever"];
 
+interface ApptWithPatients {
+  id: string;
+  patient_id: string;
+  starts_at: string;
+  patients: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    tax_code: string | null;
+  } | null;
+}
+
 export function AiCoachPanel() {
   const practiceProfileId = usePracticeProfileId();
   const navigate = useNavigate();
@@ -74,7 +86,7 @@ export function AiCoachPanel() {
           .lte("starts_at", endOfCurrentMonth.toISOString());
 
         if (tsAppts) {
-          const eligible = (tsAppts as any[]).filter(
+          const eligible = (tsAppts as unknown as ApptWithPatients[]).filter(
             (a) => a.patients && a.patients.tax_code && a.patients.tax_code.trim() !== ""
           );
           if (eligible.length > 0) {
@@ -100,7 +112,7 @@ export function AiCoachPanel() {
 
         if (futureAppts) {
           const seen = new Set<string>();
-          for (const a of futureAppts as any[]) {
+          for (const a of futureAppts as unknown as ApptWithPatients[]) {
             const p = a.patients;
             if (p && (!p.tax_code || p.tax_code.trim() === "") && !seen.has(p.id)) {
               seen.add(p.id);
@@ -125,7 +137,7 @@ export function AiCoachPanel() {
           .lt("starts_at", thirtyDaysAgo);
 
         if (oldCompleted && oldCompleted.length > 0) {
-          const apptIds = (oldCompleted as any[]).map((a) => a.id);
+          const apptIds = (oldCompleted as unknown as ApptWithPatients[]).map((a) => a.id);
           const { data: srs } = await supabase
             .from("service_records")
             .select("appointment_id, id")
@@ -148,7 +160,7 @@ export function AiCoachPanel() {
             }
           }
 
-          for (const a of oldCompleted as any[]) {
+          for (const a of oldCompleted as unknown as ApptWithPatients[]) {
             if (!paidApptIds.has(a.id) && a.patients) {
               const days = Math.floor((now.getTime() - new Date(a.starts_at).getTime()) / (1000 * 60 * 60 * 24));
               result.push({
@@ -175,7 +187,7 @@ export function AiCoachPanel() {
           .lte("starts_at", todayIso);
 
         if (weekCompleted && weekCompleted.length > 0) {
-          const wIds = (weekCompleted as any[]).map((a) => a.id);
+          const wIds = (weekCompleted as unknown as ApptWithPatients[]).map((a) => a.id);
           const { data: wSrs } = await supabase
             .from("service_records")
             .select("appointment_id, id")
@@ -196,7 +208,7 @@ export function AiCoachPanel() {
             }
           }
 
-          for (const a of weekCompleted as any[]) {
+          for (const a of weekCompleted as unknown as ApptWithPatients[]) {
             if (!invoicedApptIds.has(a.id) && a.patients) {
               result.push({
                 id: `inv-${a.id}`,
@@ -253,7 +265,7 @@ export function AiCoachPanel() {
     }
 
     analyze();
-  }, [practiceProfileId]);
+  }, [practiceProfileId, fetchAtRiskPatients]);
 
   async function handleTsConfirm() {
     setTsSubmitting(true);

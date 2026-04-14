@@ -145,9 +145,10 @@ Deno.serve(async (req) => {
           .update({ invoice_id: invoiceId })
           .in("id", recIds);
 
-      } catch (err: any) {
-        console.error("generate-monthly-invoices: group error", { patientId, error: err.message });
-        errors.push(`Patient ${patientId}: ${err.message}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        console.error("generate-monthly-invoices: group error", { patientId, error: msg });
+        errors.push(`Patient ${patientId}: ${msg}`);
       }
     }
 
@@ -156,9 +157,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ created, updated, errors }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err: any) {
-    console.error("generate-monthly-invoices: fatal error", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error("generate-monthly-invoices: fatal error", msg);
+    return new Response(JSON.stringify({ error: msg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
