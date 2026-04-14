@@ -149,7 +149,7 @@ export default function DashboardPage() {
 
         {/* Greeting */}
         <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Ciao, {greeting} 👋</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Dashboard riepilogativa</h1>
           <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
         </div>
 
