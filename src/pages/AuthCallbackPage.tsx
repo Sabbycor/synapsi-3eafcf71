@@ -16,6 +16,14 @@ export default function AuthCallbackPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
         try {
+          // Ensure user record exists in public.users
+          // (necessary for magic link where the trigger can be slow)
+          await supabase
+            .from("users")
+            .upsert({
+              id: session.user.id,
+              email: session.user.email,
+            }, { onConflict: "id", ignoreDuplicates: true });
           // Check if user has a practice profile
           const { data: profile } = await supabase
             .from("practice_profiles")
@@ -35,19 +43,19 @@ export default function AuthCallbackPage() {
         // Also fire off getSession just in case the event already happened before the listener was attached
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!currentSession && !session && event === 'INITIAL_SESSION') {
-            // Only redirect to login if we explicitly know there's no session and it was the initial load
-            // Otherwise wait for the hash to be processed
+          // Only redirect to login if we explicitly know there's no session and it was the initial load
+          // Otherwise wait for the hash to be processed
         }
       }
     });
 
     // Fallback: If after a short delay no event triggered the redirect and we have no session, go to login.
     const timeout = setTimeout(async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            setError("Sessione non trovata. Riprova ad accedere.");
-            setTimeout(() => navigate("/login", { replace: true }), 2000);
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError("Sessione non trovata. Riprova ad accedere.");
+        setTimeout(() => navigate("/login", { replace: true }), 2000);
+      }
     }, 3000);
 
     return () => {
