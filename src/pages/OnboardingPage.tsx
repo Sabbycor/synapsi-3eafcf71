@@ -144,7 +144,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col pb-24">
       {/* Stepper */}
       <div className="border-b border-border bg-card p-6">
         <div className="container max-w-xl mx-auto">
@@ -282,23 +282,21 @@ export default function OnboardingPage() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Controls */}
-      <div className="container max-w-xl mx-auto px-6 pb-20 safe-bottom mt-8">
-        <div className="flex gap-3">
-          {step > 0 && (
-            <Button variant="outline" onClick={prev} className="flex-1">
-              <ChevronLeft size={16} /> Indietro
-            </Button>
-          )}
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row justify-center gap-3 mt-16 max-w-sm mx-auto">
           {step < 4 ? (
-            <Button onClick={next} className="flex-1">
+            <Button onClick={next} className="w-full sm:flex-1">
               Avanti <ChevronRight size={16} />
             </Button>
           ) : (
-            <Button onClick={finish} className="flex-1" disabled={loading}>
+            <Button onClick={finish} className="w-full sm:flex-1" disabled={loading}>
               {loading ? "Salvataggio..." : "Completa configurazione"}
+            </Button>
+          )}
+          {step > 0 && (
+            <Button variant="ghost" onClick={prev} className="w-full sm:flex-1 order-last sm:order-first">
+              Indietro
             </Button>
           )}
         </div>
