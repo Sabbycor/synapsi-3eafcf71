@@ -146,7 +146,7 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Stepper */}
-      <div className="border-b border-border bg-card px-4 py-4">
+      <div className="border-b border-border bg-card p-6">
         <div className="container max-w-xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             {steps.map((s, i) => (
@@ -173,7 +173,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Form Content */}
-      <div className="flex-1 container max-w-xl mx-auto px-4 py-6 animate-fade-in">
+      <div className="flex-1 container max-w-xl mx-auto px-6 py-8 pb-32 animate-fade-in">
         {step === 0 && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -285,7 +285,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Controls */}
-      <div className="border-t border-border bg-card px-4 py-4 safe-bottom">
+      <div className="border-t border-border bg-card p-6 pb-12 safe-bottom">
         <div className="container max-w-xl mx-auto flex gap-3">
           {step > 0 && (
             <Button variant="outline" onClick={prev} className="flex-1">
