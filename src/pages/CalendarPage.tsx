@@ -158,9 +158,21 @@ export default function CalendarPage() {
     fetchPatients();
   }, [fetchAppointments, fetchPatients]);
 
-  const getDateFromAppt = (a: DbAppointment) => a.starts_at.slice(0, 10);
-  const getTimeFromAppt = (a: DbAppointment) => a.starts_at.slice(11, 16);
-  const getEndTimeFromAppt = (a: DbAppointment) => a.ends_at.slice(11, 16);
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-CA", {
+      timeZone: "Europe/Rome",
+    });
+
+  const getDateFromAppt = (a: DbAppointment) => formatDate(a.starts_at);
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString("it-IT", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Rome",
+    });
+
+  const getTimeFromAppt = (a: DbAppointment) => formatTime(a.starts_at);
+  const getEndTimeFromAppt = (a: DbAppointment) => formatTime(a.ends_at);
   const getPatientNameFromAppt = (a: DbAppointment) =>
     a.patients ? `${a.patients.first_name} ${a.patients.last_name}` : "Sconosciuto";
 
@@ -216,12 +228,14 @@ export default function CalendarPage() {
       return;
     }
     setCreating(true);
-    const startsAt = `${newDate}T${newTime}:00`;
-    const [h, m] = newTime.split(":").map(Number);
-    const totalMin = h * 60 + m + 50;
-    const endH = String(Math.floor(totalMin / 60) % 24).padStart(2, "0");
-    const endM = String(totalMin % 60).padStart(2, "0");
-    const endsAt = `${newDate}T${endH}:${endM}:00`;
+    const [year, month, day] = newDate.split("-").map(Number);
+    const [hour, minute] = newTime.split(":").map(Number);
+
+    const startDate = new Date(year, month - 1, day, hour, minute, 0);
+    const endDate = new Date(startDate.getTime() + 50 * 60_000);
+
+    const startsAt = startDate.toISOString();
+    const endsAt = endDate.toISOString();
 
     const { error } = await supabase.from("appointments").insert({
       practice_profile_id: practiceProfileId,

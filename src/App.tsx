@@ -25,7 +25,6 @@ import TasksPage from "./pages/TasksPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuditLogPage from "./pages/AuditLogPage";
 import UpgradePage from "./pages/UpgradePage";
-import TestReminderPage from "./pages/TestReminderPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,7 +61,6 @@ const App = () => (
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/audit-log" element={<AuditLogPage />} />
                 <Route path="/upgrade" element={<UpgradePage />} />
-                <Route path="/test-reminder" element={<TestReminderPage />} />
               </Route>
             </Route>
 
