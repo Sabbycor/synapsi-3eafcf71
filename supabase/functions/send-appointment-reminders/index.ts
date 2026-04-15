@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
           to: [{ email: patient.email, name: patient.first_name }],
           subject,
           htmlContent,
-          sender: { name: "Synapsi", email: "hello.synapsi@10898495.brevosend.com" },
+          sender: { name: "Synapsi", email: "hello.synapsi@gmail.com" },
         }),
       });
 
