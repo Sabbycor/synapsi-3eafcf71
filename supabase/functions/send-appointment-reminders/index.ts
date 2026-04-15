@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -86,7 +87,7 @@ Deno.serve(async (req: Request) => {
           to: [{ email: patient.email, name: patient.first_name }],
           subject,
           htmlContent,
-          sender: { name: "Synapsi", email: "noreply@synapsi.app" },
+          sender: { name: "Synapsi", email: "hello.synapsi@10898495.brevosend.com" },
         }),
       });
 
