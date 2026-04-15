@@ -4,19 +4,61 @@ import { SectionHeader } from "@/components/SectionHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { AppointmentStatusBadge, InvoiceStatusBadge, ConsentStatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import {
-  getPatient, getAppointmentsForPatient, getInvoicesForPatient,
-  getPaymentsForPatient, getTasksForPatient, getRemindersForPatient,
-} from "@/data/mock";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
+import { SkeletonList } from "@/components/SkeletonCard";
 import {
   ArrowLeft, Phone, Mail, Calendar, FileText, CreditCard,
-  Bell, ListTodo, CalendarPlus, UserX, ChevronRight, Shield,
+  CalendarPlus, UserX, Shield, Hash, Cake
 } from "lucide-react";
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const patient = getPatient(id || "");
+
+  const [cons, setCons] = useState<any[]>([]);
+  const [patient, setPatient] = useState<any>(null);
+  const [appts, setAppts] = useState<any[]>([]);
+  const [invs, setInvs] = useState<any[]>([]);
+  const [pays, setPays] = useState<any[]>([]);
+  const [tks, setTks] = useState<any[]>([]);
+  const [rems, setRems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [infoForm, setInfoForm] = useState({ email: "", phone: "", tax_code: "", birth_date: "" });
+
+  useEffect(() => {
+    if (!id) return;
+    const fetchAll = async () => {
+      const { data: pat } = await supabase
+        .from("patients")
+        .select("*")
+        .eq("id", id)
+        .single();
+      setPatient(pat);
+
+      const [{ data: a }, { data: i }, { data: p }, { data: t }, { data: r }, { data: c }] =
+        await Promise.all([
+          supabase.from("appointments").select("*").eq("patient_id", id),
+          supabase.from("invoices").select("*").eq("patient_id", id),
+          supabase.from("payments").select("*").eq("patient_id", id),
+          supabase.from("tasks").select("*").eq("patient_id", id),
+          supabase.from("reminders").select("*").eq("patient_id", id),
+          supabase.from("patient_consents").select("*").eq("patient_id", id).order("created_at", { ascending: false })
+        ]);
+
+      setAppts(a ?? []);
+      setInvs(i ?? []);
+      setPays(p ?? []);
+      setTks(t ?? []);
+      setRems(r ?? []);
+      setCons(c ?? []);
+      setLoading(false);
+    };
+    fetchAll();
+  }, [id]);
+
+  if (loading) return <PageContainer><SkeletonList count={4} /></PageContainer>;
 
   if (!patient) {
     return (
@@ -31,14 +73,10 @@ export default function PatientDetailPage() {
     );
   }
 
-  const appts = getAppointmentsForPatient(patient.id);
-  const invs = getInvoicesForPatient(patient.id);
-  const pays = getPaymentsForPatient(patient.id);
-  const tks = getTasksForPatient(patient.id);
-  const rems = getRemindersForPatient(patient.id);
-
   const upcomingAppts = appts.filter(a => a.status === "scheduled" || a.status === "confirmed");
   const pastAppts = appts.filter(a => a.status === "completed" || a.status === "cancelled" || a.status === "no_show");
+  const latestConsent = cons[0] ?? null;
+  const consentSigned = latestConsent?.accepted_at && !latestConsent?.revoked_at;
 
   return (
     <PageContainer>
@@ -51,40 +89,119 @@ export default function PatientDetailPage() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-secondary shrink-0">
               <span className="text-base font-bold text-secondary-foreground">
-                {patient.firstName[0]}{patient.lastName[0]}
+                {patient.first_name[0]}{patient.last_name[0]}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="font-display text-lg font-bold text-foreground truncate">
-                {patient.firstName} {patient.lastName}
+                {patient.first_name} {patient.last_name}
               </h1>
-              <p className="text-xs text-muted-foreground">{patient.totalSessions} sedute · {patient.status === "active" ? "Attivo" : "Inattivo"}</p>
+              <p className="text-xs text-muted-foreground">
+                {appts.filter(a => a.status === "completed").length} sedute · {patient.status === "active" ? "Attivo" : "Inattivo"}
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Contact */}
+        {/* Contact & Personal Infos*/}
         <div className="rounded-xl border border-border bg-card p-4 shadow-card space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">Informazioni</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Informazioni</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7 px-2"
+              onClick={() => {
+                if (editingInfo) {
+                  // Salva su Supabase
+                  supabase
+                    .from("patients")
+                    .update({
+                      email: infoForm.email,
+                      phone: infoForm.phone,
+                      tax_code: infoForm.tax_code,
+                      birth_date: infoForm.birth_date,
+                    })
+                    .eq("id", id)
+                    .then(({ error }) => {
+                      if (!error) {
+                        setPatient({ ...patient, ...infoForm });
+                      }
+                    });
+                } else {
+                  setInfoForm({
+                    email: patient.email ?? "",
+                    phone: patient.phone ?? "",
+                    tax_code: patient.tax_code ?? "",
+                    birth_date: patient.birth_date ?? "",
+                  });
+                }
+                setEditingInfo(!editingInfo);
+              }}
+            >
+              {editingInfo ? "Salva" : "Modifica"}
+            </Button>
+          </div>
+
           <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Mail size={14} /> <span>{patient.email}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone size={14} /> <span>{patient.phone}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">C.F.</span>
-              <span className="text-foreground font-mono">{patient.fiscalCode}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Data di nascita</span>
-              <span className="text-foreground">{patient.dateOfBirth}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Paziente dal</span>
-              <span className="text-foreground">{patient.createdAt}</span>
-            </div>
+            {editingInfo ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Mail size={14} className="text-muted-foreground shrink-0" />
+                  <input
+                    className="flex-1 bg-muted rounded-md px-2 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    value={infoForm.email}
+                    onChange={e => setInfoForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="Email"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone size={14} className="text-muted-foreground shrink-0" />
+                  <input
+                    className="flex-1 bg-muted rounded-md px-2 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    value={infoForm.phone}
+                    onChange={e => setInfoForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="Telefono"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Hash size={14} className="text-muted-foreground shrink-0" />
+                  <input
+                    className="flex-1 bg-muted rounded-md px-2 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    value={infoForm.tax_code}
+                    onChange={e => setInfoForm(f => ({ ...f, tax_code: e.target.value }))}
+                    placeholder="Codice fiscale"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Cake size={14} className="text-muted-foreground shrink-0" />
+                  <input
+                    type="date"
+                    className="flex-1 bg-muted rounded-md px-2 py-1 text-sm text-foreground outline-none focus:ring-1 focus:ring-primary"
+                    value={infoForm.birth_date}
+                    onChange={e => setInfoForm(f => ({ ...f, birth_date: e.target.value }))}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail size={14} /> <span>{patient.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone size={14} /> <span>{patient.phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Hash size={14} /> <span>{patient.tax_code}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Cake size={14} /> <span>{patient.birth_date ? new Date(patient.birth_date).toLocaleDateString("it-IT") : "—"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Calendar size={14} /> <span>{new Date(patient.created_at).toLocaleDateString("it-IT")}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -95,13 +212,17 @@ export default function PatientDetailPage() {
               <Shield size={14} className="text-accent" />
               <h3 className="text-sm font-semibold text-foreground">Consenso</h3>
             </div>
-            <ConsentStatusBadge status={patient.consentStatus} />
+            <ConsentStatusBadge status={consentSigned ? "signed" : "pending"} />
           </div>
-          {patient.consentDate && (
-            <p className="text-xs text-muted-foreground mt-2">Firmato il {patient.consentDate}</p>
+          {latestConsent?.accepted_at && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Firmato il {new Date(latestConsent.accepted_at).toLocaleDateString("it-IT")}
+            </p>
           )}
-          {patient.consentStatus !== "signed" && (
-            <Button variant="outline" size="sm" className="mt-3 w-full text-xs">Gestisci consenso</Button>
+          {!consentSigned && (
+            <Button variant="outline" size="sm" className="mt-3 w-full text-xs">
+              Gestisci consenso
+            </Button>
           )}
         </div>
 
@@ -131,7 +252,7 @@ export default function PatientDetailPage() {
               {upcomingAppts.map(a => (
                 <div key={a.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary shrink-0">
-                    <span className="text-xs font-semibold text-secondary-foreground">{a.startTime}</span>
+                    <span className="text-xs font-semibold text-secondary-foreground">{a.starts_at}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{a.date}</p>
@@ -152,7 +273,7 @@ export default function PatientDetailPage() {
               {pastAppts.map(a => (
                 <div key={a.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted shrink-0">
-                    <span className="text-xs font-semibold text-muted-foreground">{a.startTime}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">{a.starts_at}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{a.date}</p>
@@ -196,30 +317,6 @@ export default function PatientDetailPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">€{p.amount}</p>
                     <p className="text-xs text-muted-foreground">{p.date} · {p.method === "bank_transfer" ? "Bonifico" : p.method === "cash" ? "Contanti" : "Carta"}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tasks & Reminders */}
-        {(tks.length > 0 || rems.length > 0) && (
-          <div>
-            <SectionHeader title="Attività e promemoria" className="mb-3" />
-            <div className="space-y-2">
-              {tks.map(t => (
-                <div key={t.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
-                  <ListTodo size={14} className="text-muted-foreground shrink-0" />
-                  <p className={`text-sm flex-1 truncate ${t.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>{t.title}</p>
-                </div>
-              ))}
-              {rems.map(r => (
-                <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-card">
-                  <Bell size={14} className="text-accent shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">{r.description}</p>
                   </div>
                 </div>
               ))}

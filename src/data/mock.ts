@@ -244,9 +244,9 @@ export const dashboardStats = {
 // ──────────────────────────────────────────────────
 // HELPERS
 // ──────────────────────────────────────────────────
-
-export function getPatient(id: string): Patient | undefined {
-  return patients.find(p => p.id === id);
+// converti id a stringa per confronto
+export function getPatient(id: string) {
+  return patients.find(p => String(p.id) === String(id));
 }
 
 export function getPatientName(id: string): string {
