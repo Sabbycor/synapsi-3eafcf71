@@ -75,32 +75,42 @@ export default function PatientsPage() {
       <div className="space-y-4 animate-fade-in">
         <SectionHeader
           title="Pazienti"
-          subtitle={`${activeCount} attivi`}
-          action={<Button size="sm" onClick={() => setDialogOpen(true)}><Plus size={14} /> Aggiungi</Button>}
+          subtitle={`${activeCount} pazienti attivi`}
+          action={
+            <Button size="sm" onClick={() => setDialogOpen(true)} className="shadow-md hover:shadow-lg transition-all">
+              <Plus size={16} className="mr-2" /> Nuovo Paziente
+            </Button>
+          }
         />
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Cerca paziente..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
-        </div>
+        {/* Search & Filters */}
+        <div className="space-y-4 bg-secondary/20 p-4 rounded-2xl border border-border/50">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              placeholder="Cerca per nome o cognome..." 
+              className="pl-9 bg-background border-none shadow-none focus-visible:ring-1 focus-visible:ring-primary/20 h-10" 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+            />
+          </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {filters.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-2 text-xs font-medium transition-colors border min-h-[44px] flex items-center",
-                filter === f.key
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-muted-foreground border-border hover:bg-muted"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {filters.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={cn(
+                  "shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-all border",
+                  filter === f.key
+                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/30"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* List */}
@@ -114,28 +124,39 @@ export default function PatientsPage() {
             action={!search ? <Button size="sm" onClick={() => setDialogOpen(true)}><Plus size={14} /> Aggiungi paziente</Button> : undefined}
           />
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3">
             {filtered.map((p) => (
               <button
                 key={p.id}
                 onClick={() => navigate(`/patients/${p.id}`)}
-                className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card text-left transition-colors hover:bg-muted/50"
+                className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-md active:scale-[0.98]"
               >
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-secondary shrink-0">
-                  <span className="text-sm font-semibold text-secondary-foreground">
+                <div className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-transform group-hover:scale-105",
+                  p.status === 'active' ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                )}>
+                  <span className="text-sm font-bold">
                     {p.first_name[0]}{p.last_name[0]}
                   </span>
                 </div>
+                
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-foreground truncate">{p.first_name} {p.last_name}</p>
-                    {p.status === "inactive" && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Inattivo</Badge>}
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[15px] font-bold text-foreground truncate">{p.first_name} {p.last_name}</p>
+                    {p.status === "inactive" && (
+                      <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 bg-muted/50 text-muted-foreground border-none">
+                        Inattivo
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {p.email ?? p.phone ?? "—"}
+                  <p className="text-xs font-medium text-muted-foreground truncate">
+                    {p.email || p.phone || "Nessun contatto"}
                   </p>
                 </div>
-                <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+
+                <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                   <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
               </button>
             ))}
           </div>

@@ -300,37 +300,46 @@ export default function CalendarPage() {
   return (
     <PageContainer>
       <div className="space-y-4 animate-fade-in">
-        <SectionHeader
-          title="Agenda"
-          action={<Button size="sm" onClick={() => { setNewDate(selectedDate); setDrawerOpen(true); }}><Plus size={14} /> Nuovo</Button>}
-        />
+        {/* Header and Controls */}
+        <div className="space-y-4 bg-secondary/10 p-4 rounded-2xl border border-border/50">
+          <SectionHeader
+            title="Agenda"
+            action={
+              <Button size="sm" onClick={() => { setNewDate(selectedDate); setDrawerOpen(true); }} className="shadow-lg hover:shadow-xl transition-all">
+                <Plus size={16} className="mr-2" /> Nuovo Appuntamento
+              </Button>
+            }
+          />
 
-        {/* View toggle */}
-        <div className="flex rounded-lg border border-border bg-card p-1">
-          {([
-            { key: "day" as ViewMode, icon: CalendarDays, label: "Giorno" },
-            { key: "week" as ViewMode, icon: CalendarRange, label: "Settimana" },
-            { key: "month" as ViewMode, icon: CalendarIcon, label: "Mese" },
-          ]).map(v => (
-            <button
-              key={v.key}
-              onClick={() => setView(v.key)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-xs font-medium transition-colors",
-                view === v.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <v.icon size={14} />
-              {v.label}
-            </button>
-          ))}
-        </div>
+          {/* View toggle */}
+          <div className="flex rounded-xl border border-border/50 bg-background/50 p-1">
+            {([
+              { key: "day" as ViewMode, icon: CalendarDays, label: "Giorno" },
+              { key: "week" as ViewMode, icon: CalendarRange, label: "Settimana" },
+              { key: "month" as ViewMode, icon: CalendarIcon, label: "Mese" },
+            ]).map(v => (
+              <button
+                key={v.key}
+                onClick={() => setView(v.key)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all",
+                  view === v.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <v.icon size={14} />
+                {v.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Date nav */}
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)}><ChevronLeft size={16} /></Button>
-          <span className="font-display font-semibold text-foreground text-sm capitalize">{dateLabel}</span>
-          <Button variant="ghost" size="icon" onClick={() => navigateDate(1)}><ChevronRight size={16} /></Button>
+          {/* Date nav */}
+          <div className="flex items-center justify-between px-2">
+            <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)} className="hover:bg-background"><ChevronLeft size={18} /></Button>
+            <div className="text-center">
+              <span className="font-display font-bold text-foreground text-[15px] capitalize block">{dateLabel}</span>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => navigateDate(1)} className="hover:bg-background"><ChevronRight size={18} /></Button>
+          </div>
         </div>
 
         {/* Week strip */}
@@ -412,32 +421,47 @@ export default function CalendarPage() {
             action={<Button size="sm" onClick={() => setDrawerOpen(true)}><Plus size={14} /> Aggiungi</Button>}
           />
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3">
             {filteredAppointments.map((a) => (
-              <div key={a.id} className="flex gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
-                <div className="flex flex-col items-center shrink-0">
-                  <span className="text-xs font-semibold text-foreground">{getTimeFromAppt(a)}</span>
-                  <div className="w-px flex-1 bg-border my-1" />
-                  <span className="text-xs text-muted-foreground">{getEndTimeFromAppt(a)}</span>
+              <div key={a.id} className="relative group overflow-hidden flex gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-md">
+                <div className="flex flex-col items-center justify-center shrink-0 w-12 border-r border-border/50 pr-4">
+                  <span className="text-[13px] font-bold text-foreground">{getTimeFromAppt(a)}</span>
+                  <div className="w-px h-4 bg-muted my-1" />
+                  <span className="text-[10px] font-medium text-muted-foreground">{getEndTimeFromAppt(a)}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-foreground truncate">{getPatientNameFromAppt(a)}</p>
+                
+                <div className="flex-1 min-w-0 py-0.5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[15px] font-bold text-foreground truncate">{getPatientNameFromAppt(a)}</p>
                     <AppointmentStatusBadge status={(a.status as AppointmentStatus) ?? "scheduled"} />
                   </div>
-                  <p className="text-xs text-muted-foreground">{a.location_type === "online" ? "Online" : "In studio"}</p>
-                  {view !== "day" && <p className="text-xs text-muted-foreground mt-0.5">{getDateFromAppt(a)}</p>}
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                       <div className={cn("w-1.5 h-1.5 rounded-full", a.location_type === "online" ? "bg-blue-400" : "bg-emerald-400")} />
+                       {a.location_type === "online" ? "Online" : "In studio"}
+                    </span>
+                    {view !== "day" && <span className="text-xs font-medium text-muted-foreground">{getDateFromAppt(a)}</span>}
+                  </div>
+                  
                   {isActionable(a.status) && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="mt-1.5 h-7 text-xs text-primary px-2"
+                      className="mt-3 h-8 text-[11px] font-bold border-primary/20 text-primary hover:bg-primary/5 px-3 rounded-lg"
                       onClick={() => openActionDrawer(a)}
                     >
                       Gestisci stato
                     </Button>
                   )}
                 </div>
+                
+                {/* Visual accent based on status */}
+                <div className={cn(
+                  "absolute right-0 top-0 bottom-0 w-1",
+                  a.status === 'completed' ? "bg-success" : 
+                  a.status === 'confirmed' ? "bg-primary" : 
+                  a.status === 'cancelled' ? "bg-destructive" : "bg-accent/40"
+                )} />
               </div>
             ))}
           </div>

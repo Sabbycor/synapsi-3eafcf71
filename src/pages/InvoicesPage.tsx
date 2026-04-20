@@ -239,21 +239,43 @@ export default function InvoicesPage() {
           }
         />
 
-        {/* Month selector */}
-        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {monthOptions.map(m => (
-              <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Search */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Cerca fattura..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+        {/* Month & Search */}
+        <div className="space-y-4 bg-secondary/10 p-4 rounded-2xl border border-border/50">
+           <div className="flex gap-2">
+            <div className="flex-1">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="bg-background border-none shadow-none font-bold text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map(m => (
+                    <SelectItem key={m.value} value={m.value} className="text-xs font-medium">{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="relative flex-[2]">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input 
+                placeholder="Cerca fattura o paziente..." 
+                className="pl-9 bg-background border-none shadow-none text-xs h-9" 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Drafts Alert */}
+        {drafts.length > 0 && (
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-primary">{drafts.length} fatture in bozza</p>
+              <p className="text-xs text-primary/70">Totale stimato: €{draftsTotal}</p>
+            </div>
+            <Button size="sm" onClick={() => setShowFinalizeDialog(true)} className="shadow-sm">
+              <CalendarDays size={14} className="mr-2" /> Finalizza mese
+            </Button>
+          </div>
+        )}
 
         {/* List */}
         {loading ? (
@@ -265,22 +287,36 @@ export default function InvoicesPage() {
             description={search ? "Prova a modificare la ricerca" : "Le fatture appariranno qui quando registri pagamenti"}
           />
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3">
             {filtered.map(inv => (
-              <button key={inv.id} onClick={() => setSelectedInvoice(inv)} className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card text-left transition-colors hover:bg-muted/50">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-secondary shrink-0">
-                  <FileText size={16} className="text-secondary-foreground" />
+              <button 
+                key={inv.id} 
+                onClick={() => setSelectedInvoice(inv)} 
+                className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-md active:scale-[0.98]"
+              >
+                <div className={cn(
+                  "flex items-center justify-center w-12 h-12 rounded-xl shrink-0 transition-transform group-hover:scale-105",
+                  inv.status === 'paid' ? "bg-success/10 text-success" : "bg-primary/10 text-primary"
+                )}>
+                  <FileText size={20} />
                 </div>
+                
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{inv.invoice_number || "Bozza"}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[15px] font-bold text-foreground truncate">{inv.patient_name}</p>
                     <InvoiceStatusBadge status={(inv.status as InvoiceStatus) || "draft"} />
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {inv.patient_name} · €{inv.total_amount || 0} · {formatBillingMonth(inv.billing_month)}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-foreground">€{inv.total_amount || 0}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                      {inv.invoice_number || "Bozza"} · {formatBillingMonth(inv.billing_month)}
+                    </span>
+                  </div>
                 </div>
-                <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+
+                <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                   <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
               </button>
             ))}
           </div>

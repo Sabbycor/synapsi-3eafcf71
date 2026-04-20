@@ -134,7 +134,7 @@ Settimana: ${weekStart} – ${weekEnd}`;
         messages: [
           {
             role: "system",
-            content: "Sei un assistente di gestione per psicologi italiani. Ogni lunedì mattina generi un briefing settimanale conciso e motivante in italiano. Usa un tono professionale ma caldo. Massimo 5 frasi. Struttura: apertura settimana → sedute in agenda → priorità amministrative → chiusura motivante.",
+            content: "Sei un assistente di gestione per psicologi italiani. Ogni lunedì mattina generi un briefing settimanale conciso e motivante in italiano. Usa un tono professionale ma caldo, rivolgendoti direttamente al professionista al singolare (tu). Massimo 5 frasi. Struttura: apertura settimana → sedute in agenda → priorità amministrative → chiusura motivante.",
           },
           { role: "user", content: userContent },
         ],

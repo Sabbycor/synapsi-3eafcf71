@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { CreditCard, Clock, CircleDollarSign, CheckCircle2 } from "lucide-react";
+import { CreditCard, Clock, CircleDollarSign, CheckCircle2, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
@@ -246,30 +246,40 @@ export default function PaymentsPage() {
       <div className="space-y-4 animate-fade-in">
         <SectionHeader title="Pagamenti" subtitle={`${unbilled.length} da incassare · ${paid.length} incassati`} />
 
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
-            <Clock size={14} className="text-warning mx-auto mb-1" />
-            <p className="font-display text-lg font-bold text-foreground">{unbilled.length}</p>
-            <p className="text-[11px] text-muted-foreground">Da incassare</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center mb-3">
+              <Clock size={16} className="text-warning" />
+            </div>
+            <p className="font-display text-2xl font-bold text-foreground tracking-tight">{unbilled.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Da incassare</p>
+            <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-warning/5 rounded-full blur-xl" />
           </div>
-          <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
-            <CheckCircle2 size={14} className="text-success mx-auto mb-1" />
-            <p className="font-display text-lg font-bold text-foreground">€{totalPaid}</p>
-            <p className="text-[11px] text-muted-foreground">Incassati</p>
+          
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center mb-3">
+              <CheckCircle2 size={16} className="text-success" />
+            </div>
+            <p className="font-display text-2xl font-bold text-foreground tracking-tight">€{totalPaid}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Totale Incassati</p>
+            <div className="absolute -right-4 -bottom-4 w-12 h-12 bg-success/5 rounded-full blur-xl" />
           </div>
-          <div className="rounded-xl border border-border bg-card p-3 shadow-card text-center">
-            <CreditCard size={14} className="text-muted-foreground mx-auto mb-1" />
-            <p className="font-display text-lg font-bold text-foreground">{paid.length}</p>
-            <p className="text-[11px] text-muted-foreground">Pagamenti</p>
+
+          <div className="relative overflow-hidden hidden md:block rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+              <CreditCard size={16} className="text-primary" />
+            </div>
+            <p className="font-display text-2xl font-bold text-foreground tracking-tight">{paid.length}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">Transazioni</p>
           </div>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="unbilled" className="w-full">
-          <TabsList className="w-full">
-            <TabsTrigger value="unbilled" className="flex-1">Da incassare ({unbilled.length})</TabsTrigger>
-            <TabsTrigger value="paid" className="flex-1">Incassati ({paid.length})</TabsTrigger>
+          <TabsList className="w-full bg-secondary/20 p-1 rounded-xl h-11 border border-border/50">
+            <TabsTrigger value="unbilled" className="flex-1 rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">Da incassare ({unbilled.length})</TabsTrigger>
+            <TabsTrigger value="paid" className="flex-1 rounded-lg font-bold text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm">Incassati ({paid.length})</TabsTrigger>
           </TabsList>
 
           {/* Tab 1 — Unbilled */}
@@ -283,24 +293,29 @@ export default function PaymentsPage() {
                 description="Non ci sono sedute in attesa di pagamento"
               />
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-3">
                 {unbilled.map(r => (
                   <button
                     key={r.id}
                     onClick={() => openDrawer(r)}
-                    className="w-full flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card text-left transition-colors hover:bg-muted/50"
+                    className="group relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:shadow-md active:scale-[0.98]"
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-warning/10 shrink-0">
-                      <Clock size={16} className="text-warning" />
+                    <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-warning/10 shrink-0 transition-transform group-hover:scale-105">
+                      <Clock size={20} className="text-warning" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{r.patient_name}</p>
-                        <Badge variant="outline" className="text-[11px] bg-warning/10 text-warning border-warning/20">Da incassare</Badge>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[15px] font-bold text-foreground">{r.patient_name}</p>
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider bg-warning/5 text-warning border-warning/20">
+                          In attesa
+                        </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {r.service_date || "—"} · {r.service_type || "Seduta"} · {r.duration_minutes || 0} min
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {r.service_date} · {r.service_type || "Seduta"} · {r.duration_minutes || 0} min
                       </p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-secondary/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                       <ChevronRight size={16} className="text-muted-foreground" />
                     </div>
                   </button>
                 ))}
@@ -319,21 +334,21 @@ export default function PaymentsPage() {
                 description="I pagamenti registrati appariranno qui"
               />
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-3">
                 {paid.map(p => (
-                  <div key={p.id} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-success/10 shrink-0">
-                      <CheckCircle2 size={16} className="text-success" />
+                  <div key={p.id} className="relative flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-all hover:bg-muted/30">
+                    <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-success/10 shrink-0">
+                      <CheckCircle2 size={20} className="text-success" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">€{p.amount}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[15px] font-bold text-foreground">€{p.amount}</p>
                         <InvoiceStatusBadge status={(p.invoice_status as InvoiceStatus) || "draft"} />
                       </div>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-xs font-medium text-muted-foreground truncate">
                         {p.patient_name} · {paymentMethodLabels[(p.method || "cash") as PaymentMethod] || p.method}
                       </p>
-                      <p className="text-xs text-muted-foreground">{p.payment_date || "—"}</p>
+                      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/60 mt-1">{p.payment_date}</p>
                     </div>
                   </div>
                 ))}

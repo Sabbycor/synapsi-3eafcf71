@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   TrendingUp, CalendarCheck, UserX, FileText,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MonthlyStats {
   revenue: number;
@@ -14,11 +16,12 @@ interface MonthlyStats {
 }
 
 interface MonthlyReportsProps {
-  /** Calendar month these stats refer to (e.g. from dashboard, aligned with query range). */
-  monthLabel: string;
+  /** The date (any day within the month) to show reports for. */
+  selectedDate: Date;
+  onDateChange: (date: Date) => void;
 }
 
-export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
+export function MonthlyReports({ selectedDate, onDateChange }: MonthlyReportsProps) {
   const practiceProfileId = usePracticeProfileId();
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,9 +32,12 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
   const monthEnd = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}-01`;
   useEffect(() => {
     if (!practiceProfileId) return;
-    const nowLocal = new Date();
-    const start = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, "0")}-01`;
-    const next = new Date(nowLocal.getFullYear(), nowLocal.getMonth() + 1, 1);
+    
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    
+    const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
+    const next = new Date(year, month + 1, 1);
     const end = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-01`;
 
     async function fetch() {
@@ -80,16 +86,30 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
       setLoading(false);
     }
     fetch();
-  }, [practiceProfileId, monthLabel]);
+  }, [practiceProfileId, selectedDate]);
+
+  // Helper for generating month options (last 12 months)
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const d = new Date();
+    for (let i = 0; i < 12; i++) {
+        const date = new Date(d.getFullYear(), d.getMonth() - i, 1);
+        options.push({
+            value: date.toISOString(),
+            label: date.toLocaleString('it-IT', { month: 'long', year: 'numeric' })
+        });
+    }
+    return options;
+  }, []);
+
+  const currentLabel = selectedDate.toLocaleString('it-IT', { month: 'long', year: 'numeric' });
 
   if (loading) {
     return (
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">
-          {monthLabel}
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {[1, 2, 3, 4].map(i => <div key={i} className="h-20 rounded-xl bg-muted animate-pulse" />)}
+      <div className="space-y-4">
+        <div className="h-8 w-40 bg-muted animate-pulse rounded-md" />
+        <div className="grid grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map(i => <div key={i} className="h-24 rounded-2xl bg-muted animate-pulse" />)}
         </div>
       </div>
     );
@@ -105,16 +125,39 @@ export function MonthlyReports({ monthLabel }: MonthlyReportsProps) {
   ];
 
   return (
-    <div>
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 capitalize">
-        {monthLabel}
-      </p>
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Select 
+          value={selectedDate.toISOString()} 
+          onValueChange={(val) => onDateChange(new Date(val))}
+        >
+          <SelectTrigger className="w-fit min-w-[140px] h-8 text-xs font-bold bg-secondary/30 border-none shadow-none focus:ring-0 capitalize">
+             <CalendarCheck className="w-3.5 h-3.5 mr-2 text-primary" />
+             <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map(opt => (
+              <SelectItem key={opt.value} value={opt.value} className="capitalize text-xs">
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         {cards.map(c => (
-          <div key={c.label} className="rounded-xl border border-border bg-card p-3 shadow-card">
-            <c.icon size={14} className={c.color} />
-            <p className="font-display text-lg font-bold text-foreground mt-1">{c.value}</p>
-            <p className="text-[11px] text-muted-foreground">{c.label}</p>
+          <div key={c.label} className="group relative overflow-hidden rounded-2xl border border-border bg-background/50 p-4 transition-all hover:bg-background hover:shadow-sm">
+            <div className={cn(
+              "w-7 h-7 rounded-lg flex items-center justify-center mb-3",
+              c.color.includes("success") ? "bg-success/10" : 
+              c.color.includes("primary") ? "bg-primary/10" : 
+              c.color.includes("destructive") ? "bg-destructive/10" : 
+              c.color.includes("warning") ? "bg-warning/10" : "bg-muted"
+            )}>
+              <c.icon size={16} className={c.color} />
+            </div>
+            <p className="font-display text-2xl font-bold text-foreground tracking-tight">{c.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">{c.label}</p>
           </div>
         ))}
       </div>

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AiCoachPanel } from "@/components/dashboard/AiCoachPanel";
 import { MonthlyReports } from "@/components/dashboard/MonthlyReports";
 import { WeeklyBriefingCard } from "@/components/dashboard/WeeklyBriefingCard";
+import { cn } from "@/lib/utils";
 import type { AppointmentStatus } from "@/components/StatusBadge";
 import {
   CalendarCheck, Receipt, AlertTriangle, Plus, ChevronRight, CalendarDays, FileText,
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState("Dottore/Dottoressa");
   const [todayAppts, setTodayAppts] = useState<TodayAppointment[]>([]);
   const [stats, setStats] = useState({ sessionsToday: 0, openInvoices: 0, overduePayments: 0 });
+  const [reportDate, setReportDate] = useState(new Date());
 
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -155,19 +157,45 @@ export default function DashboardPage() {
         {/* Weekly Briefing */}
         <WeeklyBriefingCard />
 
-        {/* Greeting */}
-        <div>
-          <h1 className="font-display text-2xl font-bold text-foreground">Dashboard riepilogativa</h1>
-          <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
+        {/* Greeting & Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-foreground tracking-tight">
+              Bentornato, <span className="text-primary">{greeting}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1 font-medium capitalize flex items-center gap-2">
+              <CalendarDays size={14} className="text-accent" />
+              {dateLabel}
+            </p>
+          </div>
+          <Button onClick={() => navigate("/calendar")} className="shadow-lg hover:shadow-xl transition-all active:scale-95">
+            <Plus className="w-4 h-4 mr-2" /> Nuovo Appuntamento
+          </Button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-2 md:gap-3">
+        {/* Quick Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {statCards.map(s => (
-            <div key={s.label} className={`rounded-xl border bg-card p-3 md:p-4 shadow-card ${s.highlight ? "border-destructive/30" : "border-border"}`}>
-              <s.icon size={16} className={s.highlight ? "text-destructive" : "text-accent"} />
-              <p className={`font-display text-xl md:text-2xl font-bold mt-1 ${s.highlight ? "text-destructive" : "text-foreground"}`}>{s.value}</p>
-              <p className="text-[11px] text-muted-foreground">{s.label}</p>
+            <div key={s.label} className={cn(
+              "relative overflow-hidden rounded-2xl border bg-card p-4 transition-all hover:shadow-md",
+              s.highlight ? "border-destructive/30 ring-1 ring-destructive/10" : "border-border"
+            )}>
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center mb-3",
+                s.highlight ? "bg-destructive/10" : "bg-accent/10"
+              )}>
+                <s.icon size={18} className={s.highlight ? "text-destructive" : "text-accent"} />
+              </div>
+              <p className={cn(
+                "font-display text-2xl font-bold tracking-tight",
+                s.highlight ? "text-destructive" : "text-foreground"
+              )}>
+                {s.value}
+              </p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-0.5">{s.label}</p>
+              
+              {/* Subtle accent background */}
+              <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-accent/5 rounded-full blur-2xl" />
             </div>
           ))}
         </div>
@@ -233,13 +261,13 @@ export default function DashboardPage() {
               title="Report del mese"
               className="mb-3 shrink-0"
               subtitle={
-                <span className="invisible capitalize select-none" aria-hidden>
+                <span className="text-muted-foreground/80 font-semibold capitalize">
                   {reportMonthLabel}
                 </span>
               }
             />
-            <div className="min-h-0 flex-1 rounded-xl border border-border bg-card p-4 shadow-card">
-              <MonthlyReports monthLabel={reportMonthLabel} />
+            <div className="min-h-0 flex-1 rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <MonthlyReports selectedDate={reportDate} onDateChange={setReportDate} />
             </div>
           </div>
         </div>
