@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
-import { ListTodo, Check, Circle, Clock, Plus } from "lucide-react";
+import { ListTodo, Check, Circle, Clock, Plus, AlertTriangle, CheckCircle2, TrendingUp, Calendar as CalendarIcon, Tag, User, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { usePracticeProfileId } from "@/hooks/PracticeProfileContext";
@@ -152,106 +152,209 @@ export default function TasksPage() {
   };
 
   return (
-    <PageContainer>
-      <div className="space-y-4 animate-fade-in">
-        <SectionHeader
-          title="Attività"
-          subtitle={`${openCount} da completare · ${highCount} priorità alta`}
-          action={<Button size="sm" onClick={() => setDrawerOpen(true)}><Plus size={14} /> Nuova</Button>}
-        />
+    <PageContainer>      <div className="space-y-8 animate-fade-in pb-10">
+        <div className="flex items-center justify-between">
+          <SectionHeader
+            title="Attività"
+            subtitle="Gestisci i tuoi impegni e le scadenze cliniche"
+          />
+          <Button 
+            onClick={() => setDrawerOpen(true)} 
+            className="shadow-md hover:shadow-lg transition-all active:scale-95"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Nuovo Task
+          </Button>
+        </div>
 
-        {/* Filter chips - Priority */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Priorità</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {(["all", "high", "medium", "low"] as PriorityFilter[]).map(p => (
-              <button key={p} onClick={() => setPriorityFilter(p)} className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
-                priorityFilter === p ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
-              )}>
-                {p === "all" ? "Tutte" : p === "high" ? "Alta" : p === "medium" ? "Media" : "Bassa"}
-              </button>
-            ))}
+        {/* Info Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-card p-4 rounded-2xl border border-border/50 shadow-sm flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
+              <ListTodo size={18} className="text-primary" />
+            </div>
+            <span className="text-2xl font-bold text-foreground">{openCount}</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Da fare</span>
+          </div>
+          <div className="bg-card p-4 rounded-2xl border border-border/50 shadow-sm flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center mb-2">
+              <AlertTriangle size={18} className="text-destructive" />
+            </div>
+            <span className="text-2xl font-bold text-foreground">{highCount}</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Priorità Alta</span>
+          </div>
+          <div className="bg-card p-4 rounded-2xl border border-border/50 shadow-sm flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center mb-2">
+              <CheckCircle2 size={18} className="text-success" />
+            </div>
+            <span className="text-2xl font-bold text-foreground">{tasks.length - openCount}</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Completate</span>
+          </div>
+          <div className="bg-card p-4 rounded-2xl border border-border/50 shadow-sm flex flex-col gap-1">
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-2">
+              <TrendingUp size={18} className="text-accent" />
+            </div>
+            <span className="text-2xl font-bold text-foreground">{Math.round(((tasks.length - openCount) / (tasks.length || 1)) * 100)}%</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Efficienza</span>
           </div>
         </div>
 
-        {/* Filter chips - Status */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Stato</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {(["all", "todo", "in_progress", "done"] as StatusFilter[]).map(s => (
-              <button key={s} onClick={() => setStatusFilter(s)} className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
-                statusFilter === s ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
-              )}>
-                {s === "all" ? "Tutti" : s === "todo" ? "Da fare" : s === "in_progress" ? "In corso" : "Completati"}
-              </button>
-            ))}
+        {/* Filters Section */}
+        <div className="bg-secondary/20 p-4 rounded-2xl border border-border/50 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter size={14} className="text-muted-foreground" />
+            <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Filtri Rapidi</h4>
           </div>
-        </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Filter Group - Priority */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Priorità</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["all", "high", "medium", "low"] as PriorityFilter[]).map(p => (
+                  <button key={p} onClick={() => setPriorityFilter(p)} className={cn(
+                    "px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all",
+                    priorityFilter === p ? "bg-foreground text-background border-foreground shadow-md" : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                  )}>
+                    {p === "all" ? "Tutte" : p === "high" ? "Alta" : p === "medium" ? "Media" : "Bassa"}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* Filter chips - Category */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Categoria</p>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {(["all", "patient", "billing", "admin", "setup"] as CategoryFilter[]).map(c => (
-              <button key={c} onClick={() => setCategoryFilter(c)} className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium border transition-colors",
-                categoryFilter === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"
-              )}>
-                {c === "all" ? "Tutte" : taskCategoryLabels[c]}
-              </button>
-            ))}
+            {/* Filter Group - Status */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Stato</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["all", "todo", "in_progress", "done"] as StatusFilter[]).map(s => (
+                  <button key={s} onClick={() => setStatusFilter(s)} className={cn(
+                    "px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all",
+                    statusFilter === s ? "bg-foreground text-background border-foreground shadow-md" : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                  )}>
+                    {s === "all" ? "Tutti" : s === "todo" ? "Da fare" : s === "in_progress" ? "In corso" : "Completati"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Group - Category */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase ml-1">Categoria</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["all", "patient", "billing", "admin", "setup"] as CategoryFilter[]).map(c => (
+                  <button key={c} onClick={() => setCategoryFilter(c)} className={cn(
+                    "px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-all",
+                    categoryFilter === c ? "bg-foreground text-background border-foreground shadow-md" : "bg-card text-muted-foreground border-border hover:border-primary/50"
+                  )}>
+                    {c === "all" ? "Tutte" : taskCategoryLabels[c]}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Task list */}
-        {loading ? (
-          <SkeletonList count={5} />
-        ) : filtered.length === 0 ? (
-          <EmptyState
-            icon={ListTodo}
-            title="Nessuna attività"
-            description="Non ci sono attività per i filtri selezionati"
-            action={<Button size="sm" onClick={() => setDrawerOpen(true)}><Plus size={14} /> Nuova attività</Button>}
-          />
-        ) : (
-          <div className="space-y-2">
-            {filtered.map(t => (
-              <div key={t.id} className={cn(
-                "flex items-start gap-3 rounded-xl border bg-card p-4 shadow-card transition-colors",
-                t.completed_at ? "border-border opacity-60" : "border-border"
-              )}>
-                <button className="mt-0.5 shrink-0">{statusIcon(t.status)}</button>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-medium text-foreground", t.completed_at && "line-through text-muted-foreground")}>
-                    {t.title || "Senza titolo"}
-                  </p>
-                  {t.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t.description}</p>}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <PriorityBadge priority={(t.priority as TaskPriority) || "medium"} />
-                    <TaskStatusBadge status={(t.status as TaskStatusType) || "todo"} />
-                    {t.due_at && <span className="text-[11px] text-muted-foreground">Scad. {new Date(t.due_at).toLocaleDateString("it-IT", { month: "2-digit", day: "2-digit" })}</span>}
-                    {t.patient_name && <span className="text-[11px] text-accent">{t.patient_name}</span>}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-bold text-foreground/80 flex items-center gap-2">
+              <ListTodo size={16} /> 
+              Elenco Attività 
+              <span className="bg-secondary px-2 py-0.5 rounded-full text-[10px] text-secondary-foreground">{filtered.length}</span>
+            </h3>
+          </div>
+
+          {loading ? (
+            <SkeletonList count={5} />
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={ListTodo}
+              title="Tutto sotto controllo"
+              description="Non ci sono attività che corrispondono ai filtri selezionati"
+              action={<Button variant="outline" size="sm" onClick={() => { setPriorityFilter("all"); setStatusFilter("all"); setCategoryFilter("all"); }}>Ripristina filtri</Button>}
+            />
+          ) : (
+            <div className="grid gap-3">
+              {filtered.map(t => (
+                <div key={t.id} className={cn(
+                  "group relative overflow-hidden flex items-start gap-4 rounded-2xl border p-4 transition-all hover:shadow-md",
+                  t.completed_at 
+                    ? "bg-muted/30 border-border/50 opacity-60" 
+                    : "bg-card border-border hover:border-primary/30"
+                )}>
+                  {/* Priority border strip */}
+                  {!t.completed_at && (
+                    <div className={cn(
+                      "absolute left-0 top-0 bottom-0 w-1",
+                      t.priority === "high" ? "bg-destructive" : t.priority === "medium" ? "bg-primary" : "bg-muted"
+                    )} />
+                  )}
+
+                  <button 
+                    onClick={() => !t.completed_at && handleComplete(t.id)}
+                    className={cn(
+                      "mt-0.5 shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
+                      t.completed_at 
+                        ? "bg-success border-success text-white" 
+                        : "border-muted-foreground/30 hover:border-primary hover:bg-primary/5 active:scale-90"
+                    )}
+                  >
+                    {t.completed_at ? <Check size={14} strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-primary/20" />}
+                  </button>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className={cn(
+                          "text-[15px] font-bold text-foreground leading-tight tracking-tight", 
+                          t.completed_at && "line-through text-muted-foreground font-medium"
+                        )}>
+                          {t.title || "Senza titolo"}
+                        </p>
+                        {t.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{t.description}</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-3 flex-wrap">
+                      <div className="flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-md text-[10px] font-bold text-secondary-foreground uppercase tracking-wider">
+                        <Tag size={10} />
+                        {taskCategoryLabels[t.category || "admin"]}
+                      </div>
+                      
+                      {t.due_at && (
+                        <div className={cn(
+                          "flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider",
+                          new Date(t.due_at) < new Date() && !t.completed_at ? "bg-destructive/10 text-destructive" : "bg-accent/10 text-accent"
+                        )}>
+                          <CalendarIcon size={10} />
+                          {new Date(t.due_at).toLocaleDateString("it-IT", { month: "short", day: "2-digit" })}
+                        </div>
+                      )}
+
+                      {t.patient_name && (
+                        <div className="flex items-center gap-1 bg-primary/10 px-2 py-0.5 rounded-md text-[10px] font-bold text-primary uppercase tracking-wider">
+                          <User size={10} />
+                          {t.patient_name}
+                        </div>
+                      )}
+                      
+                      <div className="ml-auto flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <PriorityBadge priority={(t.priority as TaskPriority) || "medium"} />
+                      </div>
+                    </div>
                   </div>
                 </div>
-                {!t.completed_at && (
-                  <Button variant="ghost" size="sm" className="shrink-0 h-7 text-xs text-accent" onClick={() => handleComplete(t.id)}>
-                    Completa
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* New task drawer */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
-            <DrawerTitle>Nuova attività</DrawerTitle>
-            <DrawerDescription>Crea una nuova attività da completare</DrawerDescription>
+            <DrawerTitle>Nuovo Task</DrawerTitle>
+            <DrawerDescription>Crea un nuovo task da completare</DrawerDescription>
           </DrawerHeader>
           <div className="px-4 space-y-4">
             <div className="space-y-2">
@@ -306,7 +409,7 @@ export default function TasksPage() {
           </div>
           <DrawerFooter>
             <Button className="w-full" onClick={handleCreate} disabled={saving || !newTitle.trim()}>
-              {saving ? "Salvataggio..." : "Crea attività"}
+              {saving ? "Salvataggio..." : "Crea Task"}
             </Button>
             <DrawerClose asChild>
               <Button variant="outline" className="w-full">Annulla</Button>

@@ -42,8 +42,13 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.first_name.trim() || !form.last_name.trim()) {
-      toast({ title: "Campi obbligatori", description: "Nome e cognome sono richiesti.", variant: "destructive" });
+    if (!form.first_name.trim() || !form.last_name.trim() || !form.tax_code.trim()) {
+      toast({ title: "Campi obbligatori", description: "Nome, cognome e codice fiscale sono richiesti.", variant: "destructive" });
+      return;
+    }
+
+    if (form.tax_code.trim().length !== 16) {
+      toast({ title: "Codice fiscale non valido", description: "Il codice fiscale deve essere esattamente di 16 caratteri.", variant: "destructive" });
       return;
     }
 
@@ -69,7 +74,21 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
     setSaving(false);
 
     if (error) {
-      toast({ title: "Errore creazione paziente", description: error.message, variant: "destructive" });
+      console.error("[AddPatient] error:", error);
+      const msg = error.message;
+      let description = msg;
+      if (msg.includes("patients_tax_code_key") || (msg.includes("duplicate") && msg.includes("tax_code"))) {
+        description = "Esiste già un paziente con questo codice fiscale.";
+      } else if (msg.includes("patients_email_key") || (msg.includes("duplicate") && msg.includes("email"))) {
+        description = "Esiste già un paziente con questa email.";
+      } else if (msg.includes("patients_phone_key") || (msg.includes("duplicate") && msg.includes("phone"))) {
+        description = "Esiste già un paziente con questo numero di telefono.";
+      } else if (msg.includes("patients_birth_date_key") || (msg.includes("duplicate") && msg.includes("birth_date"))) {
+        description = "Esiste già un paziente con questa data di nascita.";
+      } else if (msg.includes("invalid input syntax for type date")) {
+        description = "Il formato della data inserita non è valido.";
+      }
+      toast({ title: "Errore creazione paziente", description, variant: "destructive" });
       return;
     }
 
@@ -104,7 +123,7 @@ export function AddPatientDialog({ open, onOpenChange, onSuccess }: AddPatientDi
 
           {/* Tax code */}
           <div className="space-y-1.5">
-            <Label htmlFor="ap-tax">Codice fiscale</Label>
+            <Label htmlFor="ap-tax">Codice fiscale *</Label>
             <Input id="ap-tax" value={form.tax_code} onChange={e => set("tax_code", e.target.value.toUpperCase())} maxLength={16} disabled={saving} />
           </div>
 

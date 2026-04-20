@@ -115,6 +115,7 @@ npx supabase functions deploy --all
 - [x] Integrazione AI Coach (OpenRouter)
 - [x] Gestione Abbonamenti Stripe
 - [ ] **Prossima Funzionalità**: Implementazione Cartella Clinica Elettronica (EHR) con crittografia end-to-end per la massima privacy dei dati sensibili.
+Il progetto è WIP
 
 ---
 

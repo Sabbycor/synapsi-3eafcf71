@@ -247,7 +247,12 @@ export default function CalendarPage() {
     });
 
     if (error) {
-      toast({ title: "Errore creazione appuntamento", description: error.message, variant: "destructive" });
+      console.error("[Calendar] appointment create error:", error);
+      let description = error.message;
+      if (error.message.includes("appointments_no_overlap")) {
+        description = "Esiste già un appuntamento nello stesso orario.";
+      }
+      toast({ title: "Errore creazione appuntamento", description, variant: "destructive" });
     } else {
       toast({ title: "Appuntamento creato" });
       setDrawerOpen(false);
