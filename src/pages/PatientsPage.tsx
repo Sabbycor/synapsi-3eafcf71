@@ -140,8 +140,8 @@ export default function PatientsPage() {
                   </span>
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2 mb-0">
                     <p className="text-[15px] font-bold text-foreground truncate">{p.first_name} {p.last_name}</p>
                     {p.status === "inactive" && (
                       <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0 bg-muted/50 text-muted-foreground border-none">
@@ -149,8 +149,8 @@ export default function PatientsPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs font-medium text-muted-foreground truncate">
-                    {p.email || p.phone || "Nessun contatto"}
+                  <p className="text-[12px] text-muted-foreground truncate leading-tight">
+                    {p.email || "Nessuna email"}
                   </p>
                 </div>
 

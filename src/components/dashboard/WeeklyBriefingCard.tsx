@@ -26,7 +26,7 @@ export function WeeklyBriefingCard() {
       } else {
         throw new Error("Risposta vuota");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("[WeeklyBriefing]", err);
       setError("Impossibile generare il briefing. Riprova.");
     } finally {
@@ -38,7 +38,7 @@ export function WeeklyBriefingCard() {
     if (isMonday) {
       fetchBriefing();
     }
-  }, [isMonday]);
+  }, []);
 
   return (
     <Card className="shadow-card">

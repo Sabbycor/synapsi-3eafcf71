@@ -97,8 +97,17 @@ Deno.serve(async (req) => {
 
     const atRisk = [];
     const cutoff = new Date(twentyOneDaysAgo);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
     for (const p of activePatients) {
       if (patientsWithFuture.has(p.id)) continue;
+      
+      // Se il paziente è stato contattato negli ultimi 7 giorni, non lo consideriamo a rischio
+      if (p.last_contacted_at) {
+        const lastContact = new Date(p.last_contacted_at);
+        if (lastContact > sevenDaysAgo) continue;
+      }
+
       const stats = patientStats.get(p.id);
       if (!stats || stats.lastDate >= cutoff) continue;
 

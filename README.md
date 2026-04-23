@@ -2,8 +2,6 @@
 
 **Synapsi** nasce dall'esigenza di evolvere. Il progetto rappresenta il salto tecnologico di una soluzione core precedentemente commissionata su **Microsoft Access**, oggi trasformata in una piattaforma SaaS cloud-native all'avanguardia. Il sistema automatizza la gestione clinica, il monitoraggio dei pazienti a rischio abbandono e la fatturazione, integrando un assistente AI per supportare il professionista nella comunicazione quotidiana.
 
-🔗 **Live Demo**: [https://mental-ease-ops.lovable.app/](https://mental-ease-ops.lovable.app/)
-
 ---
 
 

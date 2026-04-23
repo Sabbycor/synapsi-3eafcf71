@@ -41,9 +41,8 @@ export function useAtRiskPatients() {
 
     if (updateError) throw updateError;
 
-    setPatients((prev) =>
-      prev.map((p) => (p.id === patientId ? { ...p, last_contacted_at: now } : p))
-    );
+    // Rimuoviamo il paziente dalla lista locale così sparisce immediatamente dalla UI
+    setPatients((prev) => prev.filter((p) => p.id !== patientId));
   }, []);
 
   return { patients, isLoading, error, fetchAtRiskPatients, markAsContacted };

@@ -368,11 +368,17 @@ export default function PatientDetailPage() {
         {/* Progress Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 text-center">Andamento Sedute</h3>
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 text-center">Frequenza Sedute</h3>
             <div className="h-[200px] w-full">
               <ChartContainer config={chartConfig} className="aspect-auto h-[200px]">
-                <LineChart data={attendanceData} margin={{ top: 20, left: 10, right: 10 }}>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.15} />
+                <AreaChart data={attendanceData} margin={{ top: 20, left: 0, right: 10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--accent))" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="hsl(var(--accent))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
                   <XAxis
                     dataKey="name"
                     tickLine={false}
@@ -380,78 +386,82 @@ export default function PatientDetailPage() {
                     axisLine={false}
                     className="capitalize text-[10px] font-medium"
                   />
+                  <YAxis hide domain={[0, 'dataMax + 1']} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="total"
-                    stroke="var(--primary)"
+                    stroke="hsl(var(--accent))"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "var(--primary)", strokeWidth: 2, stroke: "#fff" }}
+                    fillOpacity={1}
+                    fill="url(#colorTotal)"
+                    dot={{ r: 4, fill: "hsl(var(--accent))", strokeWidth: 2, stroke: "#fff" }}
                     activeDot={{ r: 6, strokeWidth: 0 }}
-                    label={{ position: "top", offset: 10, fontSize: 10, fill: "var(--muted-foreground)", fontWeight: 600 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ChartContainer>
             </div>
           </div>
 
           <div className="rounded-xl border border-border bg-card p-4 shadow-card">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 text-center">Distribuzione Stati</h3>
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-6 text-center">Affidabilità Pagamenti</h3>
             <div className="h-[200px] w-full">
-              {statusData.length > 0 ? (
-                <ChartContainer config={chartConfig} className="aspect-auto h-[200px]">
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={statusData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      cornerRadius={4}
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} className="stroke-transparent outline-none" />
-                      ))}
-                      <RechartsLabel
-                        content={({ viewBox }) => {
-                          if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                            return (
-                              <text
-                                x={viewBox.cx}
-                                y={viewBox.cy}
-                                textAnchor="middle"
-                                dominantBaseline="middle"
-                              >
-                                <tspan
-                                  x={viewBox.cx}
-                                  y={viewBox.cy}
-                                  className="fill-foreground text-2xl font-bold"
-                                >
-                                  {appts.length}
-                                </tspan>
-                                <tspan
-                                  x={viewBox.cx}
-                                  y={(viewBox.cy || 0) + 20}
-                                  className="fill-muted-foreground text-[10px] uppercase font-medium"
-                                >
-                                  Totali
-                                </tspan>
-                              </text>
-                            )
-                          }
-                        }}
-                      />
-                    </Pie>
-                    <ChartLegend content={<ChartLegendContent />} className="flex-wrap gap-x-3 gap-y-1 text-[10px] font-medium" />
-                  </PieChart>
-                </ChartContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground italic font-medium">
-                  Nessun dato disponibile
-                </div>
-              )}
+              {(() => {
+                const paid = invs.filter(i => i.status === "paid").length;
+                const pending = invs.filter(i => i.status !== "paid").length;
+                const payData = [
+                  { name: "Saldate", value: paid, fill: "hsl(var(--success))" },
+                  { name: "In Attesa", value: pending, fill: "hsl(var(--warning))" }
+                ];
+                
+                if (invs.length === 0) {
+                  return (
+                    <div className="h-full flex items-center justify-center text-[10px] text-muted-foreground italic font-medium">
+                      Nessuna fattura emessa
+                    </div>
+                  );
+                }
+
+                return (
+                  <ChartContainer config={chartConfig} className="aspect-auto h-[200px]">
+                    <PieChart>
+                      <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                      <Pie
+                        data={payData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        cornerRadius={6}
+                      >
+                        {payData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} stroke="none" />
+                        ))}
+                        <RechartsLabel
+                          content={({ viewBox }) => {
+                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
+                              const total = invs.length;
+                              const percentage = Math.round((paid / total) * 100);
+                              return (
+                                <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                                  <tspan x={viewBox.cx} y={viewBox.cy} className="fill-foreground text-2xl font-bold">
+                                    {percentage}%
+                                  </tspan>
+                                  <tspan x={viewBox.cx} y={(viewBox.cy || 0) + 20} className="fill-muted-foreground text-[10px] uppercase font-medium">
+                                    Saldate
+                                  </tspan>
+                                </text>
+                              );
+                            }
+                          }}
+                        />
+                      </Pie>
+                      <ChartLegend content={<ChartLegendContent />} className="flex-wrap gap-x-3 gap-y-1 text-[10px] font-medium" />
+                    </PieChart>
+                  </ChartContainer>
+                );
+              })()}
             </div>
           </div>
         </div>
