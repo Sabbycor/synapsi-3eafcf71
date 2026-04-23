@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               model: "openai/gpt-4o-mini",
               messages: [
-                { role: "system", content: "Sei un assistente per psicologi italiani. Genera un breve messaggio caldo per un paziente che non si vede da tempo. Massimo 2 frasi." },
+                { role: "system", content: "Sei un assistente professionale per studi di psicologia. Genera un breve messaggio formale e istituzionale per un paziente che ha interrotto le sedute da tempo. Il tono deve essere clinico, rispettoso della privacy e orientato alla continuità del percorso terapeutico o al monitoraggio del benessere. Evita espressioni confidenziali o emotive. Massimo 2 frasi." },
                 { role: "user", content: `Nome: ${p.first_name}, Giorni: ${p.days_since_last}` }
               ],
             }),

@@ -123,6 +123,13 @@ export default function CalendarPage() {
   const [newTime, setNewTime] = useState("09:00");
   const [newType, setNewType] = useState("colloquio");
 
+  // Sincronizza la data del form con quella selezionata nell'agenda
+  useEffect(() => {
+    if (!drawerOpen) {
+      setNewDate(selectedDate);
+    }
+  }, [selectedDate, drawerOpen]);
+
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -418,7 +425,7 @@ export default function CalendarPage() {
             icon={CalendarDays}
             title="Nessun appuntamento"
             description={view === "day" ? "Nessuna seduta prevista per questo giorno" : "Nessun appuntamento nel periodo selezionato"}
-            action={<Button size="sm" onClick={() => setDrawerOpen(true)}><Plus size={14} /> Aggiungi</Button>}
+            action={<Button size="sm" onClick={() => { setNewDate(selectedDate); setDrawerOpen(true); }}><Plus size={14} /> Aggiungi</Button>}
           />
         ) : (
           <div className="grid grid-cols-1 gap-3">
